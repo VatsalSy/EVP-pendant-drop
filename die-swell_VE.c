@@ -1,72 +1,72 @@
 /**
- * @file pinchOff.c
- * @brief This file contains the simulation code for the pinch-off of a viscoelastic liquid jet. 
+ * @file die-swell_VE.c
+ * @brief This file contains the simulation code for the die-swell of a viscoelastic liquid being extruded out of a die. 
  * @author Vatsal Sanjay
- * @version 0.2
- * @date Oct 18, 2024
+ * @version 0.1
+ * @date Oct 22, 2024
 */
 
-// #include "axi.h"
-#include "grid/octree.h"
-// #include "grid/quadtree.h"
+#include "axi.h"
 #include "navier-stokes/centered.h"
 #define FILTERED // Smear density and viscosity jumps
-#include "../src-local/two-phaseVE.h"
+#include "src-local/two-phaseVE.h"
 
-#define VANILLA 0
-#if VANILLA
-#include "../src-local/log-conform-viscoelastic.h"
-#define logFile "logAxi-vanilla.dat"
-#else
-#if AXI
-#include "../src-local/log-conform-viscoelastic-scalar-2D.h"
-#define logFile "logAxi-scalar.dat"
-#else
-#include "../src-local/log-conform-viscoelastic-scalar-3D.h"
-#define logFile "log3D-scalar.dat"
-#endif
-#endif
+#include "src-local/log-conform-viscoelastic-scalar-2D.h"
+#define logFile "log-die-swell.dat"
 
 #include "navier-stokes/conserving.h"
 #include "tension.h"
+#include "reduced.h"
 
 #define tsnap (1e-2)
 
 // Error tolerancs
 #define fErr (1e-3)                                 // error tolerance in f1 VOF
-#define KErr (1e-6)                                 // error tolerance in VoF curvature calculated using heigh function method (see adapt event)
+#define KErr (1e-4)                                 // error tolerance in VoF curvature calculated using heigh function method (see adapt event)
 #define VelErr (1e-2)                               // error tolerances in velocity -- Use 1e-2 for low Oh and 1e-3 to 5e-3 for high Oh/moderate to high J
 
-#define epsilon (0.5)
-#define R2(x,y,z,e) (sqrt(sq(y) + sq(z)) + (e*sin(x/4.)))
+#define epsilon (4e-2)
+#define R2(x,y,z) (sq(y) + sq(z))
 
-// boundary conditions
-u.n[top] = neumann(0.0);
-p[top] = dirichlet(0.0);
 
 int MAXlevel;
+// We -> Weber number
 // Oh -> Solvent Ohnesorge number
 // Oha -> air Ohnesorge number
+// Bo -> Bond number
 // De -> Deborah number
 // Ec -> Elasto-capillary number
 // for now there is no viscoelasticity
 
-double Oh, Oha, De, Ec, tmax;
+double We, Oh, Oha, Bo, De, Ec, tmax;
 char nameOut[80], dumpFile[80];
+
+// boundary conditions
+u.n[top] = neumann(0.0);
+p[top] = dirichlet(0.0);
+u.n[right] = neumann(0.0);
+p[right] = dirichlet(0.0);
+
+f[left] = y > 1. + epsilon ? 0.0 : y < 1. - epsilon ? 1.0 : 0.5 * (1.0 + tanh((1e0 - R2(x,y,z)) / epsilon));
+u.n[left] = dirichlet(f[]*2e0*sqrt(We)*(1-R2(x,y,z)));
+u.t[left] = dirichlet(0.0);
 
 int main(int argc, char const *argv[]) {
 
-  L0 = 2*pi;
+  L0 = 4e0;
   
   // Values taken from the terminal
-  MAXlevel = 6;
+  MAXlevel = 8;
   tmax = 10;
-  Oh = 1e-2;
-  Oha = 1e-2 * Oh;
-  De = 1.0; // 1e-1;
-  Ec = 1.0; // 1e-2;
+  We = 1e0;
+  Oh = 4e0;
+  Oha = 1e-2;
+  Bo = 0.0;
 
-  init_grid (1 << 4);
+  De = 1e3; // 1e-1;
+  Ec = 0.0; // 1e-2;
+
+  init_grid (1 << 6);
 
   // Create a folder named intermediate where all the simulation snapshots are stored.
   char comm[80];
@@ -80,6 +80,7 @@ int main(int argc, char const *argv[]) {
   mu1 = Oh, mu2 = Oha;
   lambda1 = De, lambda2 = 0.;
   G1 = Ec, G2 = 0.;
+  G.x = Bo;
   f.sigma = 1.0;
 
   run();
@@ -88,8 +89,12 @@ int main(int argc, char const *argv[]) {
 
 event init (t = 0) {
   if (!restore (file = dumpFile)){
-    refine(R2(x,y,z,epsilon) < (1+epsilon) && R2(x,y,z,epsilon) > (1-epsilon) && level < MAXlevel);
-   fraction (f, (1-R2(x,y,z,epsilon)));
+    refine(x < 2*epsilon && R2(x,y,z) < sq(1+epsilon) && level < MAXlevel);
+    fraction (f, 1-R2(x,y,z)-x/epsilon);
+    foreach(){
+      u.x[] = f[]*2e0*sqrt(We)*(1-R2(x,y,z));
+      u.y[] = 0.0;
+    }
   }
 }
 
@@ -118,7 +123,7 @@ event writingFiles (t = 0; t += tsnap; t <= tmax) {
 */
 event end (t = end) {
   if (pid() == 0)
-    fprintf(ferr, "Level %d, Oh %2.1e\n", MAXlevel, Oh);
+    fprintf(ferr, "Level %d, We %2.1e, Ohs %2.1e, Oha %2.1e, De %2.1e, Ec %2.1e\n", MAXlevel, We, Oh, Oha, De, Ec);
 }
 
 /**
@@ -128,8 +133,13 @@ event logWriting (i++) {
 
   double ke = 0.;
   foreach (reduction(+:ke)){
-    ke += (2*pi*y)*(0.5*rho(f[])*(sq(u.x[]) + sq(u.y[])+ sq(u.z[])))*sq(Delta);
+    ke += (2*pi*y)*(0.5*rho(f[])*(sq(u.x[]) + sq(u.y[])))*sq(Delta);
   }
+
+  scalar pos[];
+  position (f, pos, {0,1,0});
+  double ymax = statsf(pos).max;
+  double ymin = statsf(pos).min;
 
   static FILE * fp;
   if (pid() == 0) {
@@ -140,25 +150,21 @@ event logWriting (i++) {
       return 1;
     }
 
-    scalar pos[];
-    position (f, pos, {0,1,0});
-    double ymin = statsf(pos).min;
-
     if (i == 0) {
-      fprintf(ferr, "Level %d, Oh %2.1e, Oha %2.1e, De %2.1e, Ec %2.1e\n", MAXlevel, Oh, Oha, De, Ec);
-      fprintf(ferr, "i dt t ke ymin\n");
-      fprintf(fp, "Level %d, Oh %2.1e, Oha %2.1e, De %2.1e, Ec %2.1e\n", MAXlevel, Oh, Oha, De, Ec);
-      fprintf(fp, "i dt t ke ymin\n");
+      fprintf(ferr, "Level %d, We %2.1e, Ohs %2.1e, Oha %2.1e, De %2.1e, Ec %2.1e\n", MAXlevel, We, Oh, Oha, De, Ec);
+      fprintf(ferr, "i dt t ke ymin ymax\n");
+      fprintf(fp, "Level %d, We %2.1e, Ohs %2.1e, Oha %2.1e, De %2.1e, Ec %2.1e\n", MAXlevel, We, Oh, Oha, De, Ec);
+      fprintf(fp, "i dt t ke ymin ymax\n");
     }
 
-    fprintf(fp, "%d %g %g %g %g\n", i, dt, t, ke, ymin);
-    fprintf(ferr, "%d %g %g %g %g\n", i, dt, t, ke, ymin);
+    fprintf(fp, "%d %g %g %g %g %g\n", i, dt, t, ke, ymin, ymax);
+    fprintf(ferr, "%d %g %g %g %g %g\n", i, dt, t, ke, ymin, ymax);
 
     fflush(fp);
     fclose(fp);
   }
 
-  assert(ke > -1e-10);
+  if(ke < -1e-10) return 1;
 
   if (i > 1e1 && pid() == 0) {
     if (ke > 1e2 || ke < 1e-8) {
@@ -168,7 +174,7 @@ event logWriting (i++) {
       
       fprintf(ferr, "%s", message);
       
-      fp = fopen("log", "a");
+      fp = fopen(logFile, "a");
       fprintf(fp, "%s", message);
       fflush(fp);
       fclose(fp);
