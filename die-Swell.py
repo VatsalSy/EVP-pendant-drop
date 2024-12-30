@@ -87,7 +87,7 @@ def gettingfield(filename, zmin, zmax, rmax, nr):
 # ----------------------------------------------------------------------------------------------------------------------
 
 def process_timestep(ti, folder, nGFS, GridsPerR, rmin, rmax, zmin, zmax, lw):
-    t = 0.1 * ti
+    t = 0.01 * ti
     place = f"intermediate/snapshot-{t:.4f}"
     name = f"{folder}/{int(t*1000):08d}.png"
 
@@ -160,7 +160,7 @@ def main():
     # Get number of CPUs from command line argument, or use all available
     parser = argparse.ArgumentParser()
     parser.add_argument('--CPUs', type=int, default=mp.cpu_count(), help='Number of CPUs to use')
-    parser.add_argument('--nGFS', type=int, default=550, help='Number of restart files to process')
+    parser.add_argument('--nGFS', type=int, default=4000, help='Number of restart files to process')
     parser.add_argument('--ZMAX', type=float, default=10.0, help='Maximum Z value')
     parser.add_argument('--RMAX', type=float, default=4.0, help='Maximum R value')
     parser.add_argument('--ZMIN', type=float, default=0.0, help='Minimum Z value')
@@ -173,7 +173,7 @@ def main():
     ZMIN = args.ZMIN
     
     rmin, rmax, zmin, zmax = [-RMAX, RMAX, ZMIN, ZMAX]
-    GridsPerR = 16
+    GridsPerR = 32
 
 
     lw = 2
