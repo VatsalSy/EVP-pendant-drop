@@ -361,6 +361,7 @@ void ast_cleanup (Ast * n, Stack * stack, Ast * scope, bool init_declarator)
     break;
 
   case sym_forin_declaration_statement:
+  case sym_forin_statement:
   case sym_foreach_inner_statement:
     ast_erase (n);
     break;
@@ -824,7 +825,7 @@ void undefined_variables (Ast * n, Stack * stack, void * data)
     /**
     Variable "point" is always defined. */
     
-    if (!strcmp (ast_terminal (n)->start, "point"))
+    if (!ast_terminal (n)->start || !strcmp (ast_terminal (n)->start, "point"))
       break;
     
     Ast * ref = ast_identifier_declaration (stack, ast_terminal (n)->start);
@@ -840,11 +841,12 @@ void undefined_variables (Ast * n, Stack * stack, void * data)
     }
 
     /**
-    Only consider variable identifiers i.e. not struct members and
-    function identifiers. */
+    Only consider variable identifiers i.e. not struct members,
+    function identifiers or foreach parameters. */
     
     if (n->parent->sym != sym_primary_expression ||
-	ast_ancestor (n, 3)->sym == sym_function_call)
+	ast_ancestor (n, 3)->sym == sym_function_call ||
+	ast_parent (n, sym_foreach_parameter))
       break;
 
     /**
@@ -1061,9 +1063,9 @@ Ast * ast_get_function_definition (Stack * stack, Ast * identifier, Ast * declar
 {
   if (!identifier)
     return NULL;
-  declaration = identifier_function_declaration
+  Ast * declaration1 = identifier_function_declaration
     (stack, ast_terminal (identifier)->start, declaration, NULL);
-  Ast * function_definition = declaration;
+  Ast * function_definition = declaration1;
   while (function_definition &&
 	 function_definition->sym != sym_declaration &&
 	 function_definition->sym != sym_function_definition)
@@ -1081,7 +1083,9 @@ Ast * ast_get_function_definition (Stack * stack, Ast * identifier, Ast * declar
 		   0, sym_generic_identifier,
 		   0, sym_IDENTIFIER))
     return NULL;
-  return ast_get_function_definition (stack, identifier, declaration);
+  if (declaration1 == declaration)
+    return NULL;
+  return ast_get_function_definition (stack, identifier, declaration1);
 }
 
 static void append_function_declaration (Ast * parent, Ast * declaration)
@@ -1602,6 +1606,7 @@ Ast * ast_stencil (Ast * n, bool parallel, bool overflow, bool nowarning)
     ast_traverse (statement, stack, remove_undefined, n);
     u.undefined = false;
     ast_traverse (n, stack, remove_unused, &u);
+    ast_traverse (n, stack, undefined_variables, &u);
   } while (u.undefined);
   
   ast_pop_scope (stack, n);

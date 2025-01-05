@@ -12,7 +12,7 @@ qcc [OPTIONS] FILE.c
 
 A summary of the options/switches:
 
-* `-grid=GRID` : specifies the grid to use
+* `-grid=GRID` : specifies the grid to use (overloads any "in file" includes)
 * `-MD` : generates .d dependency file
 * `-tags` : generates .tags file
 * `-python` : generates python wrapper code
@@ -384,8 +384,12 @@ int main (int argc, char ** argv)
       if (default_grid)
 	fprintf (fout, "#include \"grid/%s.h\"\n", grid);
       char s[81];
-      while (fgets (s, 81, fin))
-	fputs (s, fout);
+      while (fgets (s, 81, fin)) {
+	if (default_grid && strstr (s, "#include \"grid/"))
+	  fputs ("\n", fout);
+	else
+	  fputs (s, fout);
+      }
       if (swigfp)
 	fputs ("#include \"python.h\"\n", fout);
       if (progress)

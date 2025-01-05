@@ -1,6 +1,7 @@
 /**
 # A range of GPU tests */
 
+#include "grid/multigrid.h"
 #include "utils.h"
 
 scalar s[], s1[];

@@ -55,6 +55,7 @@ plot 'log' index 'F0 = 0.1' u 1:3 w l t 'C grid (Ro = 0.1)', \
   Gerris](http://gerris.dalembert.upmc.fr/gerris/tests/tests/nonlinear.html)
 */
 
+#include "grid/multigrid.h"
 #include <gsl/gsl_integration.h>
 #pragma autolink -lgsl -lgslcblas
 #if ML

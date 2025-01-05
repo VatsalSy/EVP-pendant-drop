@@ -971,7 +971,7 @@ char *yytext;
   static FILE * fdepend = NULL, * ftags = NULL, * myout = NULL;
   static char * fname;
   
-  static char * paths[100] = { LIBDIR }, grid[80] = "quadtree";
+  static char * paths[100] = { LIBDIR }, grid[80] = "";
   static int npath = 1, hasgrid = 0, debug = 0;
   static int dimension = 0, bghosts = 0, layers = 0, gpu = 0;
   static int incode;    // are we in code (or in a code block)?
@@ -1482,6 +1482,9 @@ YY_RULE_SETUP
   // include "..."
   if (fdepend && strstr (yytext, "// nodep"))
     return 0;
+  if (grid[0] != '\0' && strlen (fname) > 2 && !strcmp (fname + strlen(fname) - 2, ".c") &&
+      strstr (yytext, "\"grid/"))
+    return 0; // ignore #include "grid/..." in .c files if already specified with -grid=
   echo();
   if (!keywords_only) {
     char * s = strchr(yytext, '"');
@@ -1523,10 +1526,10 @@ YY_RULE_SETUP
 case 7:
 /* rule 7 can match eol */
 YY_RULE_SETUP
-#line 281 "include.lex"
+#line 284 "include.lex"
 {
     echo();
-    if (!hasgrid) {
+    if (grid[0] == '\0' && !hasgrid) {
       hasgrid = 1;
       char * s = fname;
       while (strchr (s, '/')) {
@@ -1548,7 +1551,7 @@ YY_LINENO_REWIND_TO(yy_cp - 1);
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 298 "include.lex"
+#line 301 "include.lex"
 {
   char * s = strstr (yytext, "dimension");
   space(s); nonspace(s);
@@ -1562,7 +1565,7 @@ YY_LINENO_REWIND_TO(yy_cp - 1);
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 304 "include.lex"
+#line 307 "include.lex"
 {
   char * s = strstr (yytext, "BGHOSTS");
   space(s); nonspace(s);
@@ -1576,7 +1579,7 @@ YY_LINENO_REWIND_TO(yy_cp - 1);
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 310 "include.lex"
+#line 313 "include.lex"
 {
   gpu = 1;
 }
@@ -1588,14 +1591,14 @@ YY_LINENO_REWIND_TO(yy_cp - 1);
 (yy_c_buf_p) = yy_cp -= 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 314 "include.lex"
+#line 317 "include.lex"
 {
   layers = 1;
 }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 318 "include.lex"
+#line 321 "include.lex"
 {
   // function definition
   echo();
@@ -1654,7 +1657,7 @@ YY_RULE_SETUP
 case 13:
 /* rule 13 can match eol */
 YY_RULE_SETUP
-#line 373 "include.lex"
+#line 376 "include.lex"
 {
   echo();
   if (ftags && !keywords_only)
@@ -1664,7 +1667,7 @@ YY_RULE_SETUP
 case 14:
 /* rule 14 can match eol */
 YY_RULE_SETUP
-#line 379 "include.lex"
+#line 382 "include.lex"
 {
   if (intypedef && scope == intypedef - 1) {
     echo();
@@ -1687,7 +1690,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 399 "include.lex"
+#line 402 "include.lex"
 {
   // keyword in target
   echo();
@@ -1696,12 +1699,12 @@ YY_RULE_SETUP
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 405 "include.lex"
+#line 408 "include.lex"
 { echo(); if (incode && comment()) return 1; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 406 "include.lex"
+#line 409 "include.lex"
 {
   if (!incode)
     REJECT;
@@ -1711,27 +1714,27 @@ YY_RULE_SETUP
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 412 "include.lex"
+#line 415 "include.lex"
 echo();
 	YY_BREAK
 case 19:
 /* rule 19 can match eol */
 YY_RULE_SETUP
-#line 413 "include.lex"
+#line 416 "include.lex"
 echo();
 	YY_BREAK
 case 20:
 /* rule 20 can match eol */
 YY_RULE_SETUP
-#line 414 "include.lex"
+#line 417 "include.lex"
 echo(); /* STRING_LITERAL */
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 416 "include.lex"
+#line 419 "include.lex"
 ECHO;
 	YY_BREAK
-#line 1735 "include.c"
+#line 1738 "include.c"
 			case YY_STATE_EOF(INITIAL):
 				yyterminate();
 
@@ -2723,7 +2726,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 416 "include.lex"
+#line 419 "include.lex"
 
 
 int yyerror (const char * s)
@@ -2995,7 +2998,7 @@ void includes (int argc, char ** argv,
     compdir (file, dir);
     if (!hasgrid && is_code (file)) {
       char * path, gridpath[80] = "grid/";
-      strcat (gridpath, grid); strcat (gridpath, ".h");
+      strcat (gridpath, grid[0] != '\0' ? grid : "quadtree"); strcat (gridpath, ".h");
       FILE * fp = openpath (gridpath, "r", &path);
       if (!fp) {
 	fprintf (stderr, "include: invalid grid '%s': ", grid);

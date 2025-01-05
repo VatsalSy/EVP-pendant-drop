@@ -10,7 +10,7 @@ frames-per-second to display.
 For example
 
 ~~~literatec
-  output_ppm (f, fps = 30, map = jet, spread = -1, linear = true);
+  output_ppm (f, fp = NULL, fps = 30, map = jet, spread = -1, linear = true);
 ~~~
 
 will display field `f` with a maximum of 30 frames per second. 
@@ -142,6 +142,7 @@ void output_ppm_gpu (OutputPPMGPU * display,
       GL_C (glFrontFace (GL_CCW));
       GL_C (glBindFramebuffer (GL_FRAMEBUFFER, 0));
       GL_C (glUseProgram (0));
+      GPUContext.current_shader = -1;
       GL_C (glBindTexture (GL_TEXTURE_2D, 0));
       GL_C (glDepthFunc (GL_LESS));
       GL_C (glPointSize (1));

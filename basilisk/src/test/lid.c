@@ -5,6 +5,7 @@ We use the multigrid implementation (rather than the default tree
 implementation) and either the MAC or the centered Navier--Stokes
 solver. */
 
+#include "grid/multigrid.h"
 #if MAC
 # include "navier-stokes/mac.h"
 #else

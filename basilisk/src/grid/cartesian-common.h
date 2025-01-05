@@ -140,7 +140,6 @@ static void init_block_scalar (scalar sb, const char * name, const char * ext,
     baseblock = list_append (baseblock, sb);
   }
   else {
-     // fixme: should use functions compatible with the interpreter
     sprintf (bname, "%s%d%s", name, n, ext);
     sb.block = - n;
   }
@@ -309,8 +308,10 @@ static int nconst = 0;
 void init_const_scalar (scalar s, const char * name, double val)
 {
   if (s.i - _NVARMAX >= nconst) {
+    qrealloc (_constant, s.i - _NVARMAX + 1, double);
+    for (int i = nconst; i < s.i - _NVARMAX; i++)
+      _constant[i] = 0.;
     nconst = s.i - _NVARMAX + 1;
-    qrealloc (_constant, nconst, double);
   }
   _constant[s.i - _NVARMAX] = val;
 }

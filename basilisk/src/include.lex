@@ -41,7 +41,7 @@
   static FILE * fdepend = NULL, * ftags = NULL, * myout = NULL;
   static char * fname;
   
-  static char * paths[100] = { LIBDIR }, grid[80] = "quadtree";
+  static char * paths[100] = { LIBDIR }, grid[80] = "";
   static int npath = 1, hasgrid = 0, debug = 0;
   static int dimension = 0, bghosts = 0, layers = 0, gpu = 0;
   static int incode;    // are we in code (or in a code block)?
@@ -240,6 +240,9 @@ FDECL     {ID}+{SP}*\(
   // include "..."
   if (fdepend && strstr (yytext, "// nodep"))
     return 0;
+  if (grid[0] != '\0' && strlen (fname) > 2 && !strcmp (fname + strlen(fname) - 2, ".c") &&
+      strstr (yytext, "\"grid/"))
+    return 0; // ignore #include "grid/..." in .c files if already specified with -grid=
   echo();
   if (!keywords_only) {
     char * s = strchr(yytext, '"');
@@ -280,7 +283,7 @@ FDECL     {ID}+{SP}*\(
 
 ^{SP}*#{SP}*define{SP}+GRIDNAME{WS}+ {
     echo();
-    if (!hasgrid) {
+    if (grid[0] == '\0' && !hasgrid) {
       hasgrid = 1;
       char * s = fname;
       while (strchr (s, '/')) {
@@ -684,7 +687,7 @@ void includes (int argc, char ** argv,
     compdir (file, dir);
     if (!hasgrid && is_code (file)) {
       char * path, gridpath[80] = "grid/";
-      strcat (gridpath, grid); strcat (gridpath, ".h");
+      strcat (gridpath, grid[0] != '\0' ? grid : "quadtree"); strcat (gridpath, ".h");
       FILE * fp = openpath (gridpath, "r", &path);
       if (!fp) {
 	fprintf (stderr, "include: invalid grid '%s': ", grid);

@@ -34,6 +34,7 @@ plot 'log' u 1:4 t 'max', 'log' u 1:2 t 'norm1', \
 ~~~
 */
 
+#include "grid/multigrid.h"
 #include "advection.h"
 
 scalar f[];

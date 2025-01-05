@@ -213,17 +213,6 @@ void kernel (Ast * n, Stack * stack, void * data)
   
   switch (n->sym) {
     
-  /**
-  ## Strings (unsupported) */
-
-  case sym_STRING_LITERAL: {
-    char s[1000];
-    AstTerminal * t = ast_terminal (n);
-    snprintf (s, 999, "\\n@error %s:%d: GLSL: error: strings are not supported\\n", t->file, t->line);
-    d->error = strdup (s);
-    return;
-  }    
-
   case sym_IDENTIFIER: {
 
     /**
@@ -278,7 +267,26 @@ void kernel (Ast * n, Stack * stack, void * data)
   case sym_selection_statement:
     implicit_type_cast (n, stack);
     break;
-    
+
+  case sym_for_declaration_statement:
+  case sym_iteration_statement:
+    if (n->child[0]->sym == sym_WHILE || n->child[0]->sym == sym_DO) {
+      Ast * expr = ast_child (n, sym_expression);
+      Ast * type = implicit_type_cast (expr, stack);
+      if (!type || type->sym != sym_BOOL)
+	type_cast (expr, "bool");
+    }
+    else if (n->child[0]->sym == sym_for_scope) {
+      Ast * expr = ast_schema (n->child[3], sym_expression_statement,
+			       0, sym_expression);
+      if (expr) {
+	Ast * type = implicit_type_cast (expr, stack);
+	if (!type || type->sym != sym_BOOL)
+	  type_cast (expr, "bool");
+      }
+    }
+    break;
+
   /**
   ## Typedef struct */
 
@@ -362,6 +370,20 @@ void kernel (Ast * n, Stack * stack, void * data)
     break;
   }
 
+  /**
+  ## Arrays as parameters 
+
+  This forces arrays passed as parameters to functions to behave like
+  in C99 i.e. passing by reference (inout) rather than by value.  */
+    
+  case sym_parameter_declaration:
+    if (ast_schema (n, sym_parameter_declaration,
+		    1, sym_declarator,
+		    0, sym_direct_declarator,
+		    2, sym_assignment_expression))
+      ast_before (n, "inout ");
+    break;
+    
   /**
   ## Cast expressions */
 
@@ -568,6 +590,30 @@ void kernel (Ast * n, Stack * stack, void * data)
     }
     
     break;
+  }
+    
+  /**
+  ## Diagonalize */
+
+  case sym_macro_statement: {
+    Ast * identifier = ast_schema (n, sym_macro_statement,
+				   0, sym_function_call,
+				   0, sym_postfix_expression,
+				   0, sym_primary_expression,
+				   0, sym_IDENTIFIER);
+    if (!strcmp (ast_terminal (identifier)->start, "diagonalize")) {
+      Ast * field = ast_schema (n, sym_macro_statement,
+				0, sym_function_call,
+				2, sym_argument_expression_list,
+				0, sym_argument_expression_list_item,
+				0, sym_assignment_expression);
+      if (field && (field = ast_is_identifier_expression (field))) {
+	stack_push (stack, &n);
+	ast_traverse (n, stack, ast_diagonalize, field);
+	ast_pop_scope (stack, n);
+      }
+    }
+    break; 
   }
     
   }

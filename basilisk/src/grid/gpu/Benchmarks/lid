@@ -36,12 +36,12 @@ Dedicated video memory: 4096 MB
 
 for i in 64 128 256 512 1024 2048; do nvidia ./lid.gpu $i 2> /dev/null | grep steps; done
 
-# Multigrid (GPU), 300 steps, 0.525159 CPU, 0.5252 real, 2.34e+06 points.step/s, 17 var
-# Multigrid (GPU), 300 steps, 0.586628 CPU, 0.5867 real, 8.38e+06 points.step/s, 17 var
-# Multigrid (GPU), 300 steps, 0.916142 CPU, 0.9162 real, 2.15e+07 points.step/s, 17 var
-# Multigrid (GPU), 300 steps, 3.37808 CPU, 3.391 real, 2.32e+07 points.step/s, 17 var
-# Multigrid (GPU), 300 steps, 9.09719 CPU, 9.104 real, 3.46e+07 points.step/s, 17 var
-# Multigrid (GPU), 300 steps, 27.3025 CPU, 27.31 real, 4.61e+07 points.step/s, 17 var
+# Multigrid (GPU), 300 steps, 0.540176 CPU, 0.5402 real, 2.27e+06 points.step/s, 17 var
+# Multigrid (GPU), 300 steps, 0.597448 CPU, 0.5975 real, 8.23e+06 points.step/s, 17 var
+# Multigrid (GPU), 300 steps, 0.931005 CPU, 0.931 real, 2.11e+07 points.step/s, 17 var
+# Multigrid (GPU), 300 steps, 1.99594 CPU, 2.002 real, 3.93e+07 points.step/s, 17 var
+# Multigrid (GPU), 300 steps, 6.48733 CPU, 6.488 real, 4.85e+07 points.step/s, 17 var
+# Multigrid (GPU), 300 steps, 24.9791 CPU, 24.98 real, 5.04e+07 points.step/s, 17 var
 
 OpenGL renderer string: Quadro RTX 6000/PCIe/SSE2
 Dedicated video memory: 24576 MB

@@ -117,7 +117,7 @@ documentation can be found. */
     solve_stats.minlevel = p.minlevel;					\
     if (solve_stats.resa > p.tolerance)					\
       fprintf (ferr,							\
-	       "WARNING: convergence for %s not reached "		\
+	       "src/solve.h:120: warning: convergence for %s not reached " \
 	       "after %d iterations\n"					\
 	       "  res: %g nrelax: %d\n", _a.name,			\
 	       solve_stats.i, solve_stats.resa, solve_stats.nrelax),	\

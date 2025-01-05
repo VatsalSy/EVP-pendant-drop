@@ -51,8 +51,10 @@ KHASH_MAP_INIT_INT64(INT64, void *)
 # define allocate(alloc, size) calloc (1, size)
 #endif
 
+static unsigned
+  maximum_iterations = 32; // INT_MAX;
+  
 static const unsigned
-  maximum_iterations = 32, // INT_MAX,
   maximum_recursion = 2,
   display_pointers = false,
   
@@ -968,6 +970,8 @@ Value * unary_operation (Ast * n, Ast * op, Value * a, Stack * stack)
     va = value_data (a, float);			\
   else if (a->type->sym == sym_DOUBLE)		\
     va = value_data (a, double);		\
+  else if (a->type->sym == sym_CHAR)		\
+    va = value_data (a, char);			\
   else						\
     return not_implemented (NULL, n, stack)
 
@@ -2240,6 +2244,28 @@ Value * internal_functions (Ast * call, Ast * identifier, Ast ** parameters, boo
     }
     return ast_internal_functions_hook (call, identifier, params, stack, value);
   }
+  else if (!strcmp (name, "strncmp")) {
+    Value * params[] = { run (parameters[0], stack), run (parameters[1], stack), run (parameters[2], stack) };
+    if (!params[0] || !params[1] || !params[2])
+      return undefined (NULL, call, stack);
+    Value * value = new_value (stack, call, (Ast *)&ast_int, 0);
+    if ((value_flags (params[0]) & unset) ||
+	(value_flags (params[1]) & unset) ||
+	(value_flags (params[2]) & unset))
+      value_set_flags (value, unset);
+    else {
+      const char * s1 = value_data (params[0], void *);
+      const char * s2 = value_data (params[1], void *);
+      long size = value_data (params[2], long);
+      if (!s1 || !s2) {
+	message (NULL, call, "strncmp (null, null, stack)\n", 2, stack);
+	value_data (value, int) = 0;
+      }
+      else
+	value_data (value, int) = strncmp (s1, s2, size);
+    }
+    return ast_internal_functions_hook (call, identifier, params, stack, value);
+  }
   else if (!strcmp (name, "atan2")) {
     Value * params[] = { run (parameters[0], stack), run (parameters[1], stack) };
     if (!params[0] || !params[1])
@@ -2270,6 +2296,8 @@ Value * internal_functions (Ast * call, Ast * identifier, Ast ** parameters, boo
   }
   else if (!strcmp (name, "interpreter_verbosity"))
     ((StackData *)stack_get_data (stack))->verbosity = value_data (run (parameters[0], stack), int);
+  else if (!strcmp (name, "interpreter_maximum_iterations"))
+    maximum_iterations = value_data (run (parameters[0], stack), int);
   else if (!strcmp (name, "reset_field_value")) {
     Value * params[] = { run (parameters[0], stack), run (parameters[1], stack), run (parameters[2], stack) };
     char * field = value_data (params[0], char *);
@@ -2888,8 +2916,8 @@ Value * ast_run_node (Ast * n, Stack * stack)
       }
       else
 	value = new_value (stack, n, (Ast *)&ast_void, 0);
-      StackData * d = stack_get_data (stack);
 #if 1
+      StackData * d = stack_get_data (stack);
       if (d->call < d->conditional) // fixme: changed from d->call <= d->conditional
 	value_set_flags (value, unset);
 #endif
@@ -2948,7 +2976,7 @@ Value * ast_run_node (Ast * n, Stack * stack)
       } while (maxiter--);
     }
     else if (n->child[0]->sym == sym_for_declaration_statement)
-      run (n->child[0], stack);
+      value = run (n->child[0], stack);
     else { // for loop
       assert (n->child[0]->sym == sym_for_scope);
       run (n->child[2], stack);

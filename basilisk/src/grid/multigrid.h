@@ -776,7 +776,6 @@ void init_grid (int n)
   Multigrid * m = qmalloc (1, Multigrid);
   grid = (Grid *) m;
   grid->depth = grid->maxdepth = log_base2(n);
-  m->field_size = _shift (depth() + 1);
   N = 1 << depth();
   // mesh size
   grid->n = grid->tn = 1 << dimension*depth();
@@ -795,7 +794,8 @@ void init_grid (int n)
     add_boundary (b);
   }
 #endif
-  // allocate grid
+  // allocate grid: this must be after mpi_boundary_new() since this modifies depth()
+  m->field_size = _shift (depth() + 1);
   m->d = (char *) malloc(m->field_size*datasize);
   reset (all, 0.);
 }

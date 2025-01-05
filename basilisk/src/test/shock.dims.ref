@@ -1,4 +1,4 @@
-118 constraints, 118 unknowns
+120 constraints, 120 unknowns
 [0]  /src/grid/array.h:25: '4096'
 [0]  /src/common.h:390: '1.[0]'
 [0]  /src/common.h:391: '1.[0]'

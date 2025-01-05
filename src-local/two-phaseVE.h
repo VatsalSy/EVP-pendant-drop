@@ -24,8 +24,6 @@ method. The volume fraction in fluid 1 is $f=1$ and $f=0$ in fluid
 #include "vof.h"
 
 scalar f[], * interfaces = {f};
-(const) scalar Gp = unity; // elastic modulus
-(const) scalar lambda = unity; // relaxation time
 
 double rho1 = 1., mu1 = 0., rho2 = 1., mu2 = 0.;
 double G1 = 0., G2 = 0.; // elastic moduli

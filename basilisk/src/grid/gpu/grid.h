@@ -40,8 +40,6 @@ in the source code, or using the `-grid` command line option of
 qcc -autolink -Wall -O2 -grid=gpu/multigrid code.c -o code -lm
 ~~~
 
-(where `code.c` does not specify the grid).
-
 The standard Basilisk [Makefile](/Tutorial#using-makefiles) also
 includes the handy recipe
 
@@ -168,11 +166,11 @@ make test.gpu.tst
 we get
 
 ~~~bash
-test.gpu.c:9: GLSL: error: strings are not supported
+test.gpu.c:9: GLSL: error: unknown function 'printf'
 test.gpu.c:8: warning: foreach() done on CPU (see GLSL errors above)
 ~~~
 
-Basilisk warns us that "strings are not supported" in GLSL (at line 9)
+Basilisk warns us that "printf" is not known in GLSL (at line 9)
 and that, as a consequence, the loop at line 8 (i.e. the second loop
 which includes "printf") was run on the CPU. Note that the first
 message is a "GLSL: error" but that the code still ran OK on the
@@ -182,11 +180,10 @@ runtime by the graphics card driver.
 
 Since GPUs have a very limited access to the operating system
 (i.e. only through the OpenGL interface) we cannot expect the loop
-including "printf" (or any other output) to run on the GPU (in
-addition to the fact that "strings are not supported"). Note also that
-the second loop should be "serial" rather than parallel (see [Parallel
-Programming](/Basilisk C#parallel-programming)). So we need to modify
-the code to
+including "printf" (or any other output) to run on the GPU. Note also
+that the second loop should be "serial" rather than parallel (see
+[Parallel Programming](/Basilisk C#parallel-programming)). So we need
+to modify the code to
 
 ~~~literatec
 ...
@@ -239,7 +236,6 @@ implementation also has the following limitations, some of which will
 be lifted in the (not-too-distant) future. In rough order of "lifting
 priority" these are:
 
-* [Multilayer](/Basilisk%20C#layers) is currently limited to a single layer
 * Only 2D Cartesian and Multigrid grids for now: 3D multigrid will
   follow easily, quadtrees and octrees are more difficult.
 * Access to video memories largers than 2^32^ bytes i.e. 4GB is
@@ -342,6 +338,7 @@ static char * str_append_array (char * dst, const char * list[])
 static char glsl_preproc[] =
   "// #line " xstr(__LINE__) " " __FILE__ "\n"
   "#define dimensional(x)\n"
+  "#define qassert(file, line, cond)\n"
 #if !SINGLE_PRECISION
   "#define real double\n"
   "#define coord dvec3\n"
@@ -372,22 +369,27 @@ static char glsl_preproc[] =
   "};\n"
   "#define field_size() _field_size\n"
   "#define ast_pointer(x) (x)\n"
-  
   GPU_CODE()
-  
   "#define _NVARMAX 65536\n"
   "#define NULL 0\n"
   "#define val(s,k,l,m) ((s).i < _NVARMAX ? valt(s,k,l,m)"
   " : _constant[clamp((s).i -_NVARMAX,0,_nconst-1)])\n"
   "#define val_out_(s,i,j,k) valt(s,i,j,k)\n"
+  "#define diagonalize(a)\n"
+  "#define val_diagonal(s,i,j,k) real((i) == 0 && (j) == 0 && (k) == 0)\n"
   "#define _attr(s,member) (_attr[(s).index].member)\n"
   "#define forin(type,s,list) for (int _i = 0; _i < list.length() - 1; _i++) { type s = list[_i];\n"
   "#define endforin() }\n"
 #if LAYERS
+  "#define _index(a,m) ((a).i + (point.l + _layer + (m) < _attr(a,block) ? point.l + _layer + (m) : 0))\n"
   "#define foreach_block_inner() for (point.l = 0; point.l < nl; point.l++)\n"
   "#define end_foreach_block_inner() point.l = 0;\n"
   "#define foreach_blockf(_f) for (point.l = 0; point.l < _attr(_f,block); point.l++)\n"
   "#define end_foreach_blockf() point.l = 0;\n"
+#else
+  "#define _index(a,m) ((a).i)\n"
+  "#define foreach_blockf(_f)\n"
+  "#define end_foreach_blockf()\n"
 #endif
   "#define forin2(a,b,c,d) for (int _i = 0; _i < c.length() - 1; _i++)"
   "  { a = c[_i]; b = d[_i];\n"
@@ -489,7 +491,8 @@ static void boundary_top (Point point, int i)
   for (scalar s in apply_bc_list)
     if (!s.face || s.i != s.v.y.i) {
       scalar b = (s.v.x.i < 0 ? s : s.i == s.v.y.i ? s.v.x : s.v.y);
-      s[i,-bc_period_y] = b.boundary_top (neighborp(i), neighborp(i,-bc_period_y), s, &data);
+      foreach_blockf(s)
+	s[i,-bc_period_y] = b.boundary_top (neighborp(i), neighborp(i,-bc_period_y), s, &data);
     }
 }
 
@@ -499,7 +502,8 @@ static void boundary_bottom (Point point, int i)
   for (scalar s in apply_bc_list)
     if (!s.face || s.i != s.v.y.i) {
       scalar b = (s.v.x.i < 0 ? s : s.i == s.v.y.i ? s.v.x : s.v.y);
-      s[i,bc_period_y] = b.boundary_bottom (neighborp(i), neighborp(i,bc_period_y), s, &data);
+      foreach_blockf(s)
+	s[i,bc_period_y] = b.boundary_bottom (neighborp(i), neighborp(i,bc_period_y), s, &data);
     }
 }
 
@@ -511,30 +515,35 @@ void apply_bc (Point point)
   if (point.i == GHOSTS)
     for (scalar s in apply_bc_list)
       if (s.face && s.i == s.v.x.i && s.boundary_left)
-	s[] = s.boundary_left (point, neighborp(bc_period_x), s, &data);
+	foreach_blockf(s)
+	  s[] = s.boundary_left (point, neighborp(bc_period_x), s, &data);
   if (point.i == N + GHOSTS)
     for (scalar s in apply_bc_list)
       if (s.face && s.i == s.v.x.i && s.boundary_right)
-	s[] = s.boundary_right (neighborp(bc_period_x), point, s, &data);
+	foreach_blockf(s)
+	  s[] = s.boundary_right (neighborp(bc_period_x), point, s, &data);
   if (point.j == GHOSTS)
     for (scalar s in apply_bc_list)
       if (s.face && s.i == s.v.y.i) {
 	scalar b = s.v.x;
 	if (b.boundary_bottom)
-	  s[] = b.boundary_bottom (point, neighborp(0,bc_period_y), s, &data);
+	  foreach_blockf(s)
+	    s[] = b.boundary_bottom (point, neighborp(0,bc_period_y), s, &data);
       }
   if (point.j == N + GHOSTS)
     for (scalar s in apply_bc_list)
       if (s.face && s.i == s.v.y.i) {
 	scalar b = s.v.x;
 	if (b.boundary_top)
-	  s[] = b.boundary_top (neighborp(0,bc_period_y), point, s, &data);
+	  foreach_blockf(s)
+	    s[] = b.boundary_top (neighborp(0,bc_period_y), point, s, &data);
       }
   // centered BCs
   if (point.i == GHOSTS) { // left
     for (scalar s in apply_bc_list)
       if (!s.face || s.i != s.v.x.i)
-	s[bc_period_x] = s.boundary_left (point, neighborp(bc_period_x), s, &data);
+	foreach_blockf(s)
+	  s[bc_period_x] = s.boundary_left (point, neighborp(bc_period_x), s, &data);
     if (point.j == GHOSTS)
       boundary_bottom (point, bc_period_x); // bottom-left
     if (point.j == N + GHOSTS - 1)
@@ -543,7 +552,8 @@ void apply_bc (Point point)
   if (point.i == N + GHOSTS - 1) { // right
     for (scalar s in apply_bc_list)
       if (!s.face || s.i != s.v.x.i)
-	s[- bc_period_x] = s.boundary_right (point, neighborp(- bc_period_x), s, &data);
+	foreach_blockf(s)
+	  s[- bc_period_x] = s.boundary_right (point, neighborp(- bc_period_x), s, &data);
     if (point.j == GHOSTS)
       boundary_bottom (point, - bc_period_x); // bottom-right
     if (point.j == N + GHOSTS - 1)
@@ -1191,13 +1201,13 @@ static void gpu_cpu_sync_scalar (scalar s, char * sep, GLenum mode)
   GL_C (glBindBuffer (GL_SHADER_STORAGE_BUFFER, GPUContext.ssbo));
   GL_C (glMemoryBarrier (GL_BUFFER_UPDATE_BARRIER_BIT));
   size_t size = field_size()*sizeof(real);
-  char * gd = glMapBufferRange (GL_SHADER_STORAGE_BUFFER, s.i*size, size, mode);
+  char * gd = glMapBufferRange (GL_SHADER_STORAGE_BUFFER, s.i*size, s.block*size, mode);
   assert (gd);
   char * cd = grid_data() + s.i*size;
   if (mode == GL_MAP_READ_BIT)
-    memcpy (cd, gd, size);
+    memcpy (cd, gd, s.block*size);
   else if (mode == GL_MAP_WRITE_BIT)
-    memcpy (gd, cd, size);
+    memcpy (gd, cd, s.block*size);
   else
     assert (false);
   assert (glUnmapBuffer (GL_SHADER_STORAGE_BUFFER));
@@ -1245,11 +1255,11 @@ void reset_gpu (void * alist, double val)
 #if SINGLE_PRECISION
       float fval = val;
       GL_C (glClearBufferSubData (GL_SHADER_STORAGE_BUFFER, GL_R32F,
-				  s.i*size, size,
+				  s.i*size, s.block*size,
 				  GL_RED, GL_FLOAT, &fval));
 #else
       GL_C (glClearBufferSubData (GL_SHADER_STORAGE_BUFFER, GL_RG32UI,
-				  s.i*size, size,
+				  s.i*size, s.block*size,
 				  GL_RG_INTEGER, GL_UNSIGNED_INT, &val));      
 #endif
       s.gpu.stored = -1;
@@ -1340,12 +1350,15 @@ static External * merge_externals (External * externals, const ForeachData * loo
     { .name = "L0", .type = sym_DOUBLE, .pointer = &L0, .global = 1 },
     { .name = "N",  .type = sym_INT,    .pointer = &N, .global = 1 },
 #if LAYERS
-    { .name = "nl",  .type = sym_INT, .pointer = &nl },
+    { .name = "nl",  .type = sym_INT, .pointer = &nl, .global = 1 },
+    { .name = "_layer",  .type = sym_INT, .pointer = &_layer, .global = 1 },
     { .name = ".block", .type = sym_INT, .nd = attroffset (block) },
 #endif
     { .name = NULL }
   };
-  static External bc = { .name = "apply_bc", .type = sym_function_declaration, .pointer = (void *)(long)apply_bc };
+  static External bc = {
+    .name = "apply_bc", .type = sym_function_declaration, .pointer = (void *)(long)apply_bc
+  };
 
   for (External * g = externals; g->name; g++) {
     g->used = false;
@@ -1360,9 +1373,6 @@ static External * merge_externals (External * externals, const ForeachData * loo
     bc.used = false;
     merged = merge_external (merged, &end, &bc, loop);
   }
-#if LAYERS
-  assert (nl == 1); // fixme: not implemented yet for more than one layer
-#endif
   for (External * g = externals; g->name; g++)
     merged = merge_external (merged, &end, g, loop);
 #if PRINTEXTERNAL  
@@ -1652,11 +1662,14 @@ static Shader * setup_shader (ForeachData * loop, const RegionParameters * regio
   ensure proper synchronisation of the compute shader and fragment
   shader (for example when using output_ppm() for interactive
   display). The nvidia driver somehow does not need this... */
-    
-  GL_C (glBindBufferBase (GL_SHADER_STORAGE_BUFFER, 0, 0));
-  GL_C (glUseProgram (shader->id));
-  GL_C (glBindBufferBase (GL_SHADER_STORAGE_BUFFER, 0, GPUContext.ssbo));
 
+  if (shader->id != GPUContext.current_shader) {
+    GL_C (glBindBufferBase (GL_SHADER_STORAGE_BUFFER, 0, 0));
+    GL_C (glUseProgram (shader->id));
+    GL_C (glBindBufferBase (GL_SHADER_STORAGE_BUFFER, 0, GPUContext.ssbo));
+    GPUContext.current_shader = shader->id;
+  }
+    
   /**
   ## Set uniforms */
 

@@ -2373,7 +2373,7 @@ static void global_boundaries_and_stencils (Ast * n, Stack * stack, void * data)
 /**
 # Second pass: Most transformations */
 
-static void diagonalize (Ast * n, Stack * stack, void * field)
+void ast_diagonalize (Ast * n, Stack * stack, void * field)
 {
   if (n->sym == sym_function_call) {
     Ast * identifier = ast_function_call_identifier (n);
@@ -2664,7 +2664,7 @@ static void translate (Ast * n, Stack * stack, void * data)
 				0, sym_assignment_expression);
       if (field && (field = ast_is_identifier_expression (field))) {
 	stack_push (stack, &n);
-	ast_traverse (n, stack, diagonalize, field);
+	ast_traverse (n, stack, ast_diagonalize, field);
 	ast_pop_scope (stack, n);
       }
     }

@@ -349,7 +349,7 @@ static void init_block_scalar (scalar sb, const char * name, const char * ext,
   }
   else
     _attribute[sb.i].block = - n;
-  all = list_append (all, sb);
+  _attribute[sb.i].name = strdup(bname); all = list_append (all, sb);
 }
 
 void realloc_scalar (int size)
@@ -575,4 +575,56 @@ void register_fpointer (void (* ptr) (void), const char * name, const void * non
 void reset_gpu (void * alist, double val)
 {
   reset (alist, val);
+}
+
+/**
+Other functions */
+
+scalar lookup_field (const char * name)
+{
+  if (name) { interpreter_verbosity (2);
+    for (scalar * s = all; s && s->i >= 0; s++)
+      if (!strcmp (_attribute[s->i].name, name))
+	return *s;
+    // Check whether the name is of the form ".*[0-9]+"
+    int size = strlen (name) - 1;
+    while (size >= 0 && name[size] >= '0' && name[size] <= '9') size--;
+    size++;
+    if (size > 0 && size < strlen (name))
+      for (scalar * s = baseblock; s && s->i >= 0; s++)
+	if (_attribute[s->i].block > 1 &&
+	    strlen(_attribute[s->i].name) == size &&
+	    !strncmp (_attribute[s->i].name, name, size))
+	  return *s;
+  }
+  return (scalar){-1};
+}
+
+vector lookup_vector (const char * name)
+{
+  if (name) { interpreter_verbosity (2);
+    char component[strlen(name) + 3];
+    strcpy (component, name);
+    strcat (component, ".x");
+    interpreter_maximum_iterations (256);
+    for (scalar * s = all; s && s->i >= 0; s++)
+      if (!strcmp (_attribute[s->i].name, component)) {
+	interpreter_maximum_iterations (32);
+	return _attribute[s->i].v;
+      }
+    interpreter_maximum_iterations (32);
+    // Check whether the name is of the form ".*[0-9]+"
+    int size = strlen (name) - 1;
+    while (size >= 0 && name[size] >= '0' && name[size] <= '9') size--;
+    size++;
+    if (size > 0 && size < strlen (name)) {
+      component[size] = '\0';
+      strcat (component, ".x");
+      for (scalar * s = baseblock; s && s->i >= 0; s++)
+	if (_attribute[s->i].block > 1 &&
+	    strcmp (_attribute[s->i].name, component))
+	  return *s;
+    }
+  }
+  return (vector){{-1}};
 }

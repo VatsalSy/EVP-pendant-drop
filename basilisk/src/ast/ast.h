@@ -297,6 +297,7 @@ Ast * ast_get_array_dimensions (Ast * direct_declarator, int symbol, AstDimensio
 /**
 ## Kernels */
 
+void ast_diagonalize (Ast * n, Stack * stack, void * field);
 char * ast_external_references (Ast * n, char * references, Stack * functions);
 char * ast_kernel               (Ast * n, Ast * argument, char * s);
 

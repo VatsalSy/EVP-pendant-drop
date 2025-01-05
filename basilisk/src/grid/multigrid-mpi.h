@@ -14,13 +14,12 @@ static void * snd_x (int i, int dst, int tag, int level, scalar * list,
   size_t size = 0;
   for (scalar s in list)
     size += s.block;
-  size *= pow((1 << level) + 2*GHOSTS, dimension - 1)*GHOSTS*sizeof(double);
+  size *= pow((1 << level) + 2*GHOSTS, dimension - 1)*GHOSTS*sizeof(real);
   double * buf = (double *) malloc (size), * b = buf;
   foreach_slice_x (i, i + GHOSTS, level)
-    for (scalar s in list) {
-      memcpy (b, &s[], sizeof(double)*s.block);
-      b += s.block;
-    }
+    for (scalar s in list)
+      for (scalar sb = s; sb.i < s.i + s.block; sb.i++, b++)
+	memcpy (b, &sb[], sizeof(real));
   MPI_Isend (buf, size, MPI_BYTE, dst, tag, MPI_COMM_WORLD, req);
   return buf;
 }
@@ -33,15 +32,14 @@ static void rcv_x (int i, int src, int tag, int level, scalar * list)
   size_t size = 0;
   for (scalar s in list)
     size += s.block;
-  size *= pow((1 << level) + 2*GHOSTS, dimension - 1)*GHOSTS*sizeof(double);
+  size *= pow((1 << level) + 2*GHOSTS, dimension - 1)*GHOSTS*sizeof(real);
   double * buf = (double *) malloc (size), * b = buf;
   MPI_Status s;
   MPI_Recv (buf, size, MPI_BYTE, src, tag, MPI_COMM_WORLD, &s);
   foreach_slice_x (i, i + GHOSTS, level)
-    for (scalar s in list) {
-      memcpy (&s[], b, sizeof(double)*s.block);
-      b += s.block;      
-    }
+    for (scalar s in list)
+      for (scalar sb = s; sb.i < s.i + s.block; sb.i++, b++)
+	memcpy (&sb[], b, sizeof(real));
   free (buf);
 }
 

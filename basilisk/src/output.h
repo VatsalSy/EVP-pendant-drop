@@ -115,28 +115,73 @@ The arguments and their default values are:
 : number of points along each dimension. Default is *N*.
 
 *linear*
-: use first-order (default) or bilinear interpolation. */
+: use first-order (default) or bilinear interpolation. 
+
+*box*
+: the lower-left and upper-right coordinates of the domain to consider.
+ Default is the entire domain.
+*/
 
 trace
-void output_matrix (scalar f, FILE * fp = stdout, int n = N, bool linear = false)
+void output_matrix (scalar f,
+		    FILE * fp = stdout,
+		    int n = N,
+		    bool linear = false,
+		    const char * file = NULL,
+		    coord box[2] = {{X0, Y0}, {X0 + L0, Y0 + L0}})
 {
-  float fn = n;
-  float Delta = (float) L0/fn;
-  fwrite (&fn, sizeof(float), 1, fp);
-  for (int j = 0; j < n; j++) {
-    float yp = (float) (Delta*j + X0 + Delta/2.);
-    fwrite (&yp, sizeof(float), 1, fp);
+  coord cn = {n}, p;
+  double delta = (box[1].x - box[0].x)/n;
+  cn.y = (int)((box[1].y - box[0].y)/delta);
+    
+  double ** ppm = (double **) matrix_new (cn.x, cn.y, sizeof(double));
+  double * ppm0 = &ppm[0][0];
+  unsigned int len = cn.x*cn.y;
+  for (int i = 0; i < len; i++)
+    ppm0[i] = - HUGE;
+
+#if _MPI
+  foreach_region (p, box, cn, reduction(max:ppm0[:len]))
+#else
+  foreach_region (p, box, cn, cpu)
+#endif
+  {
+    int i = (p.x - box[0].x)/(box[1].x - box[0].x)*cn.x;
+    int j = (p.y - box[0].y)/(box[1].y - box[0].y)*cn.y;
+    double ** alias = ppm; // so that qcc considers ppm a local variable
+    alias[i][j] = linear ? interpolate_linear (point, f, p.x, p.y, p.z) : f[];
   }
-  for (int i = 0; i < n; i++) {
-    float xp = (float) (Delta*i + X0 + Delta/2.);
-    fwrite (&xp, sizeof(float), 1, fp);
-    for (int j = 0; j < n; j++) {
-      float yp = (float)(Delta*j + Y0 + Delta/2.), v;
-      v = interpolate (f, xp, yp, linear = linear);
-      fwrite (&v, sizeof(float), 1, fp);
+  
+  if (pid() == 0) {
+    if (file) {
+      fp = fopen (file, "wb");
+      if (!fp) {
+	perror (file);
+	exit (1);
+      }
     }
+    float fn = cn.y;
+    fwrite (&fn, sizeof(float), 1, fp);
+    coord delta = {(box[1].x - box[0].x)/cn.x, (box[1].y - box[0].y)/cn.y};
+    for (int j = 0; j < cn.y; j++) {
+      float yp = box[0].y + delta.y*(j + 0.5);
+      fwrite (&yp, sizeof(float), 1, fp);
+    }
+    for (int i = 0; i < cn.x; i++) {
+      float xp = box[0].x + delta.x*(i + 0.5);
+      fwrite (&xp, sizeof(float), 1, fp);
+      for (int j = 0; j < cn.y; j++) {
+	float z = ppm[i][j];
+	fwrite (&z, sizeof(float), 1, fp);
+      }
+    }
+    if (file)
+      fclose (fp);
+    else
+      fflush (fp);
   }
-  fflush (fp);
+    
+  matrix_free (ppm);
 }
 
 /**
@@ -397,8 +442,9 @@ FILE * open_image (const char * file, const char * options)
 	has_ffmpeg = true;
       else {
 	fprintf (ferr,
-		 "open_image(): warning: cannot find '%s' or 'ffmpeg'/'avconv'\n"
-		 "open_image(): warning: falling back to raw PPM outputs\n", command);
+		 "src/output.h:%d: warning: cannot find '%s' or 'ffmpeg'/'avconv'\n"
+		 "src/output.h:%d: warning: falling back to raw PPM outputs\n",
+		 __LINE__, command, __LINE__);
 	has_ffmpeg = false;
       }
     }
@@ -430,8 +476,9 @@ FILE * open_image (const char * file, const char * options)
 	has_convert = true;
       else {
 	fprintf (ferr,
-		 "open_image(): warning: cannot find 'convert'\n"
-		 "open_image(): warning: falling back to raw PPM outputs\n");
+		 "src/output.h:%d: warning: cannot find 'convert'\n"
+		 "src/output.h:%d: warning: falling back to raw PPM outputs\n",
+		 __LINE__, __LINE__);
 	has_convert = false;
       }
     }

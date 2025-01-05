@@ -215,8 +215,8 @@ mgstats mg_solve (scalar * a, scalar * b,
   if (s.resa > tolerance) {
     scalar v = a[0]; // fixme: should not be necessary
     fprintf (ferr, 
-	     "WARNING: convergence for %s not reached after %d iterations\n"
-	     "  res: %g sum: %g nrelax: %d tolerance: %g\n", v.name,
+	     "src/poisson.h:%d: warning: convergence for %s not reached after %d iterations\n"
+	     "  res: %g sum: %g nrelax: %d tolerance: %g\n", __LINE__, v.name,
 	     s.i, s.resa, s.sum, s.nrelax, tolerance), fflush (ferr);
   }
     

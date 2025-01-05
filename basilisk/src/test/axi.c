@@ -54,6 +54,7 @@ velocity field.
 We use the axisymmetric metric, the viscous solver and the standard
 time loop. */
 
+#include "grid/multigrid.h"
 #include "axi.h"
 #include "viscosity.h"
 #include "run.h"

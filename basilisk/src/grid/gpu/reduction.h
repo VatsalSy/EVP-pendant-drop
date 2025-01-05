@@ -97,7 +97,10 @@ real gpu_reduction (size_t offset, const char op, const RegionParameters * regio
   a32_hash_add (&hash, fs, strlen (fs));
   shader = load_shader (fs, a32_hash (&hash), NULL);
   assert (shader);
-  GL_C (glUseProgram (shader->id));
+  if (shader->id != GPUContext.current_shader) {
+    GL_C (glUseProgram (shader->id));
+    GPUContext.current_shader = shader->id;
+  }
   const GLint loffset = 3, lnb = 4, lnbr = 5;
   
   if (is_foreach_point) {

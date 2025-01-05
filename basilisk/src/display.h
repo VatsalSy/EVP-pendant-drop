@@ -703,8 +703,8 @@ void display_url (FILE * fp)
   struct hostent * h = gethostbyname (hostname);
   if (!h)
     fprintf (stderr,
-	     "display_url(): warning: gethostbyname(\"%s\") returned NULL\n",
-	     hostname);
+	     "src/display.h:%d: warning: gethostbyname(\"%s\") returned NULL\n",
+	     __LINE__, hostname);
   fprintf (fp, DISPLAY_JS "?ws://%s:%d", h ? h->h_name : "127.0.0.1",
 	   Display.port);
 }

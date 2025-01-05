@@ -148,7 +148,6 @@ more implicit discretisation than the default ($\alpha_H = 1/2$). */
 
 #define F0() (Beta*(y - 0.5))
 #define K0() (DELTA*Beta)
-#define alpha_H 1.
 #include "layered/coriolis.h"
 
 double border = 0.;
@@ -226,10 +225,10 @@ event init (i = 0)
   when a "border" is not included. */
 
   foreach_dimension() {
+    zb[left] = 1000.;
     h[left] = 0.;
-    eta[left] = dirichlet(1.);
+    zb[right] = 1000.;
     h[right] = 0.;
-    eta[right] = dirichlet(1.);
   }
 
   /**

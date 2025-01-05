@@ -344,8 +344,8 @@ int fractions_cleanup (scalar c, face vector s,
     schanged += changed;
   }
   if (changed)
-    fprintf (stderr, "WARNING: fractions_cleanup() did not converge after "
-	     "%d iterations\n", i);
+    fprintf (stderr, "src/embed.h:%d: warning: fractions_cleanup() did not converge after "
+	     "%d iterations\n", __LINE__, i);
   return schanged;
 }
   

@@ -92,6 +92,7 @@ event defaults0 (i = 0)
 #if TREE
   h.refine = h.prolongation = refine_linear;
   h.restriction = restriction_volume_average;
+  h.dirty = true;
 #endif
   eta = new scalar;
   reset ({h, zb}, 0.);
@@ -104,9 +105,12 @@ event defaults0 (i = 0)
 #if TREE
   zb.refine = zb.prolongation = refine_linear;
   zb.restriction = restriction_volume_average;
+  zb.dirty = true;
   eta.prolongation = refine_linear;
   eta.refine  = refine_eta;
   eta.restriction = restriction_eta;
+  eta.depends = list_copy ({zb,h});
+  eta.dirty = true;
 #endif // TREE
 }
 
@@ -144,6 +148,7 @@ event defaults (i = 0)
 #if TREE
     s.refine = s.prolongation = refine_linear;
     s.restriction = restriction_volume_average;
+    s.dirty = true;
 #endif
   }
 
@@ -211,7 +216,9 @@ event face_fields (i++, last)
   foreach_face (reduction (min:dtmax)) {
     double ax = a_baro (eta, 0);
     double H = 0., um = 0.;
+    double Hr = 0., Hl = 0.;
     foreach_layer() {
+      Hr += h[], Hl += h[-1];
 
       /**
       The face velocity is computed as the height-weighted average of
@@ -222,14 +229,27 @@ event face_fields (i++, last)
       hu.x[] = hl > 0. || hr > 0. ? (hl*u.x[-1] + hr*u.x[])/(hl + hr) : 0.;
 
       /**
-      The face height is computed using a variant of the
-      [BCG](/src/bcg.h) scheme. */
-      
-      double hff, un = pdt*(hu.x[] + pdt*ax)/Delta, a = sign(un);
-      int i = - (a + 1.)/2.;
-      double g = h.gradient ? h.gradient (h[i-1], h[i], h[i+1])/Delta :
-	(h[i+1] - h[i-1])/(2.*Delta);
-      hff = h[i] + a*(1. - a*un)*g*Delta/2.;
+      If the left or central cell are dry, we consider a "step-like"
+      bathymetry and define the face height as the water level above
+      the step. */
+
+      double hff;
+      if (Hl <= dry)
+	hff = fmax (fmin (zb[] + Hr - zb[-1], h[]), 0.);
+      else if (Hr <= dry)
+	hff = fmax (fmin (zb[-1] + Hl - zb[], h[-1]), 0.);
+      else {
+
+	/**
+	In the default case, the face height is computed using a variant of the
+	[BCG](/src/bcg.h) scheme. */
+
+	double un = pdt*hu.x[]/Delta, a = sign(un);
+	int i = - (a + 1.)/2.;
+	double g = h.gradient ? h.gradient (h[i-1], h[i], h[i+1])/Delta :
+	  (h[i+1] - h[i-1])/(2.*Delta);
+	hff = h[i] + a*(1. - a*un)*g*Delta/2.;
+      }
       hf.x[] = fm.x[]*hff;
 
       /**

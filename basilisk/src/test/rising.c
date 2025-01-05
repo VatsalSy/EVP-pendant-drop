@@ -20,6 +20,9 @@ formulation. */
 # include "momentum.h"
 #else
 #include "navier-stokes/centered.h"
+#if CASE2
+# define FILTERED 1
+#endif
 #if CLSVOF
 # include "two-phase-clsvof.h"
 #elif LEVELSET

@@ -1,0 +1,2 @@
+export BASILISK=/Users/vatsal/Library/CloudStorage/Dropbox/ProjectsOngoing/die-swell/EVP-pendant-drop/basilisk/src
+export PATH=$PATH:$BASILISK

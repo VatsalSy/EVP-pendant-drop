@@ -21,7 +21,7 @@
   " parent.i = (point.i + GHOSTS)/2; parent.j = (point.j + GHOSTS)/2;\n" \
   "#define _shift(l) (((1 << 2*(l)) - 1)/3 + 4*GHOSTS*((1 << (l)) - 1 + GHOSTS*(l)))\n"	\
   "#define valt(s,k,l,m)"						\
-  "  _data[(s).i*field_size() + point.j + (l) + (point.i + (k))*((1 << point.level) + 2*GHOSTS) +" \
+  "  _data[_index(s,m)*field_size() + point.j + (l) + (point.i + (k))*((1 << point.level) + 2*GHOSTS) +" \
   " _shift (point.level)]\n"		\
   "#define val_red_(s) _data[(s).i*field_size() + point.j - GHOSTS +"	\
   "  (point.i - GHOSTS)*NY + _shift (point.level)]\n"			\
@@ -41,12 +41,12 @@
   "  _data[2*point.j - GHOSTS + (l) +"					\
   "        (2*point.i - GHOSTS + (k))*((1 << point.level)*2 + 2*GHOSTS) +" \
   "        _shift (point.level + 1) +"					\
-  "        (a).i*field_size()]\n"					\
+  "        _index(a,m)*field_size()]\n"					\
   "#define coarse(a,k,l,m)"						\
   "  _data[(point.j + GHOSTS)/2 + (l) +"				\
   "        ((point.i + GHOSTS)/2 + (k))*((1 << point.level)/2 + 2*GHOSTS) +" \
   "        _shift (point.level - 1) +"					\
-  "        (a).i*field_size()]\n"
+  "        _index(a,m)*field_size()]\n"
 
 #include "../multigrid.h"
 #include "gpu.h"

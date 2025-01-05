@@ -121,6 +121,8 @@ char * add_reference (Ast * ref, char * references, Ast * scope, Stack * stack, 
   Ast * attributes = ast_parent (ref, sym_struct_or_union_specifier);
   
   if (type == (Ast *) &ast_function) {
+    if (!strcmp (start, "qassert"))
+      return references;
     
     /**
     Function pointers */

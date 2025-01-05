@@ -11,7 +11,8 @@ static struct {
   GLFWwindow * window;
   GLuint ssbo;
   bool fragment_shader;
-} GPUContext = {0};
+  int current_shader;
+} GPUContext = { .current_shader = -1 };
 
 static void gpu_check_error (const char * stmt,
 			     const char * fname, int line)

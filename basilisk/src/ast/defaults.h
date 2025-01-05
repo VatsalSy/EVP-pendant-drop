@@ -45,6 +45,7 @@ typedef int int32_t;
 typedef unsigned int uint32_t;
 typedef long int64_t;
 typedef unsigned long uint64_t;
+typedef double time_t;
 
 /**
 ## Tricks for AST
@@ -80,6 +81,8 @@ bool is_constant();
 void dimensional();
 void NOT_UNUSED();
 void neighborp();
+void diagonalize();
+double val_diagonal();
 
 double abs (double x);
 double acos (double x);
@@ -100,6 +103,8 @@ double sq (double x);
 double cube (double x);
 double max (double a, double b);
 double min (double a, double b);
+double fmax (double a, double b);
+double fmin (double a, double b);
 double mix (double a, double b, double c);
 double mod (double a, double b);
 double modf (double a, double * b);

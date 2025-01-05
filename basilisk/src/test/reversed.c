@@ -120,7 +120,7 @@ event logfile (t = {0,T}) {
   stats sc = statsf (cf);
   double cmin = HUGE, cmax = 0.;
   foreach (reduction(min:cmin) reduction(max:cmax))
-    if (f[] > 1e-12) { // round-off errors are a problem
+    if (f[] > 1e-6) { // round-off errors are a problem
       double c = cf[]/f[];
       if (c < cmin) cmin = c;
       if (c > cmax) cmax = c;

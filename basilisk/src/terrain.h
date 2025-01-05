@@ -80,14 +80,17 @@ void refine_terrain (Point point, scalar zb)
 }
 #endif // MULTIGRID
 
-static void delete_terrain (scalar zb)
+void delete_terrain (scalar zb)
 {
+  if (!zb.kdt)
+    return;
   for (int i = 0; i < NPROC; i++) {
     for (Kdt ** kdt = (Kdt **) zb.kdt[i]; *kdt; kdt++)
       kdt_destroy (*kdt);
     free (zb.kdt[i]);
   }
   free (zb.kdt);
+  zb.kdt = NULL;
 }
 
 @define CHARP char * // fixme: workaround for va_arg macro
@@ -181,5 +184,8 @@ void terrain (scalar zb, ...)
       dmax[] = nodata;
     }
   }
+#endif
+#if !TREE
+  delete_terrain (zb);
 #endif
 }

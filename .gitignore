@@ -1,50 +1,34 @@
-Video*
-getData-elastic-scalar
-getFacet
-die-swell_VE
-die-swell_Newt
-**/*.s
-**/*.tests 
-**/*.deps
+# basililsk specific files
+**/*.DS_Store
 **/*.html
+**/intermediate*
+**/log*.dat
+**/restart*
+**/*.tags*
+**/*.deps
+**/*.tests
+**/*.s
+**/*.s.d
 **/*.tst
+**/Video
+**/*.mp4
+**/*.json
+**/*.bv
+**/*.png
 
-CMakeLists.txt.user
-CMakeCache.txt
-CMakeFiles
-CMakeScripts
-Testing
-Makefile
-cmake_install.cmake
-install_manifest.txt
-compile_commands.json
-CTestTestfile.cmake
-_deps
-CMakeUserPresets.json
+# Custom executables (add your specific executable names here)
+**/die-swell_ViscoElastic
 
-.DS_Store
-**/.DS_Store
-
-# vscode specific files
-.vscode
-
-# Basilisk specific files
-.project_config
-basilisk/_darcs
-
-# Prerequisites
-*.d
+# never exclude these files
+!*.c
+!*.h
+!*.sbatch
 
 # Object files
 *.o
 *.ko
 *.obj
 *.elf
-
-# Linker output
-*.ilk
-*.map
-*.exp
 
 # Precompiled Headers
 *.gch
@@ -85,3 +69,25 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
+# IDE/Editor folders
+.vscode/
+.idea/
+*.swp
+*~
+
+# Build directories
+build/
+bin/
+obj/
+
+# Dependency directories
+deps/
+
+# OS generated files
+**/*.DS_Store
+**/.DS_Store?
+**/._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
