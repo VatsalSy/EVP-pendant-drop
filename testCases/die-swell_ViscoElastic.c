@@ -27,7 +27,7 @@
 #define VelErr (1e-2)                               // error tolerances in velocity -- Use 1e-2 for low Oh and 1e-3 to 5e-3 for high Oh/moderate to high J
 #define AErr (1e-3)                                 // error tolerance in VoF curvature calculated using heigh function method (see adapt event)
 
-#define epsilon (4e-2)
+#define epsilon (1e-1)
 #define R2(x,y,z) (sq(y) + sq(z))
 
 
@@ -48,9 +48,11 @@ p[top] = dirichlet(0.0);
 u.n[right] = neumann(0.0);
 p[right] = dirichlet(0.0);
 
-f[left] = y > 1. + epsilon ? 0.0 : y < 1. - epsilon ? 1.0 : 0.5 * (1.0 + tanh((1e0 - R2(x,y,z)) / epsilon));
-u.n[left] = dirichlet(f[]*2e0*(1-R2(x,y,z)));
+// f[left] = dirichlet(y > 1. + epsilon ? 0.0 : y < 1. - epsilon ? 1.0 : 0.5 * (1.0 + tanh((1e0 - R2(x,y,z)) / epsilon)));
+f[left] = neumann(0.);
+u.n[left] = dirichlet(clamp(f[],0.,1.)*2e0*(1-R2(x,y,z)));
 u.t[left] = dirichlet(0.0);
+p[left] = dirichlet(0.0);
 
 int main(int argc, char const *argv[]) {
 
@@ -59,14 +61,18 @@ int main(int argc, char const *argv[]) {
   L0 = 1e1; //atof(argv[1]);
   MAXlevel = 9; //atoi(argv[2]);
 
-  We = 4e1; //atof(argv[3]);
+  We = 1e2; //atof(argv[3]);
   Re_s = 1e0; //atof(argv[4]);
   muR = 1e-2;
 
   tmax = 1e2; //atof(argv[5]);
 
-  Wi = 0.0; //atof(argv[6]);
-  El = 0.0; //atof(argv[7]);
+  Wi = 1e0; //atof(argv[6]);
+  El = 1e-2; //atof(argv[7]);
+  TOLelastic = 5e-1;
+
+  A12[left] = dirichlet(clamp(f[],0.,1.)*El*Wi*(-2e0*y));
+  A11[left] = dirichlet(clamp(f[],0.,1.)*(1 + 2*El*sq(Wi)*sq(-2e0*y)) + (1.0-clamp(f[],0.,1.)));
 
   init_grid (1 << 6);
 
@@ -90,10 +96,13 @@ int main(int argc, char const *argv[]) {
 
 event init (t = 0) {
   if (!restore (file = dumpFile)){
-    refine(x < 2*epsilon && R2(x,y,z) < sq(1+epsilon) && level < MAXlevel);
-    fraction (f, 1-R2(x,y,z)-x/epsilon);
+    refine(x < 2*epsilon && R2(x,y,z) < sq(1+2*epsilon) && level < MAXlevel);
+    // fraction (f, 1-R2(x,y,z)-x/epsilon);
+    fraction (f, intersection(1-R2(x,y,z), epsilon-x));
     foreach(){
-      u.x[] = f[]*2e0*(1-R2(x,y,z));
+      u.x[] = clamp(f[],0.,1.)*2e0*(1-R2(x,y,z));
+      A12[] = clamp(f[],0.,1.)*El*Wi*(-2e0*y);
+      A11[] = clamp(f[],0.,1.)*(1 + 2*El*sq(Wi)*sq(-2e0*y))+(1-clamp(f[],0.,1.));
       u.y[] = 0.0;
     }
   }

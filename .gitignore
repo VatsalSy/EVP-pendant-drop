@@ -15,12 +15,15 @@
 **/*.json
 **/*.bv
 **/*.png
-
+**/.qcc*
 # Custom executables (add your specific executable names here)
 **/die-swell_ViscoElastic
 **/getFacet
 **/getData-elastic-scalar
 **/die-swell_Newt
+**/Newtonian
+**/El1e-2_Wi1e0
+**/die-swell_ViscoElastic-Newt
 
 # never exclude these files
 !*.c

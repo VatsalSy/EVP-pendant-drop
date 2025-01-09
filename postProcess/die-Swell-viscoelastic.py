@@ -126,7 +126,7 @@ def process_timestep(ti, caseToProcess, folder, nGFS, GridsPerR, rmin, rmax, zmi
     line_segments = LineCollection(segs1, linewidths=4, colors='blue', linestyle='solid')
     ax.add_collection(line_segments)
 
-    cntrl1 = ax.imshow(taus, cmap="hot_r", interpolation='Bilinear', origin='lower', extent=[-rminp, -rmaxp, zminp, zmaxp], vmax=1.0, vmin=-4.0)
+    cntrl1 = ax.imshow(taup, cmap="coolwarm", interpolation='Bilinear', origin='lower', extent=[-rminp, -rmaxp, zminp, zmaxp], vmax=2.0, vmin=-2.0)
 
     cntrl2 = ax.imshow(vel, interpolation='Bilinear', cmap='Blues', origin='lower', extent=[rminp, rmaxp, zminp, zmaxp], vmax=2.0, vmin=0.0)
 
