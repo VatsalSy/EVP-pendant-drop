@@ -18,7 +18,6 @@
 
 #include "navier-stokes/conserving.h"
 #include "tension.h"
-#include "reduced.h"
 
 #define tsnap (1e-2)
 
@@ -34,13 +33,13 @@
 
 int MAXlevel;
 // We -> Weber number
-// Oh -> Solvent Ohnesorge number
-// Oha -> air Ohnesorge number
-// Bo -> Bond number
-// De -> Deborah number
-// Ec -> Elasto-capillary number
+// Re_s -> Solvent Reynolds number
+// Re_a -> air Reynolds number
+// Wi -> Weissberger number
+// El -> Elastic number
+// muR -> ratio of air viscosity to solvent viscosity
 
-double We, Oh, Oha, Bo, De, Ec, tmax;
+double We, Re_s, Re_a, muR, Wi, El, tmax;
 char nameOut[80], dumpFile[80];
 
 // boundary conditions
@@ -59,12 +58,15 @@ int main(int argc, char const *argv[]) {
   // Values taken from the terminal
   L0 = 1e1; //atof(argv[1]);
   MAXlevel = 9; //atoi(argv[2]);
-  We = 1e3; //atof(argv[3]);
-  Oh = 1e3; //atof(argv[4]);
+
+  We = 4e1; //atof(argv[3]);
+  Re_s = 1e0; //atof(argv[4]);
+  muR = 1e-2;
+
   tmax = 1e2; //atof(argv[5]);
 
-  De = 1e-1; //atof(argv[6]);
-  Ec = 1e-1; //atof(argv[7]);
+  Wi = 0.0; //atof(argv[6]);
+  El = 0.0; //atof(argv[7]);
 
   init_grid (1 << 6);
 
@@ -77,10 +79,9 @@ int main(int argc, char const *argv[]) {
 
 
   rho1 = 1., rho2 = 1e-3;
-  mu1 = Oh/sqrt(We), mu2 = Oha/sqrt(We);
-  lambda1 = De*sqrt(We), lambda2 = 0.;
-  G1 = Ec/We, G2 = 0.;
-  G.x = Bo/We;
+  mu1 = 1e0/Re_s, mu2 = muR/Re_s;
+  lambda1 = Wi, lambda2 = 0.;
+  G1 = El, G2 = 0.;
   f.sigma = 1.0/We;
 
   run();
@@ -104,8 +105,8 @@ event init (t = 0) {
 event adapt(i++){
   scalar KAPPA[];
   curvature(f, KAPPA);
-  adapt_wavelet ((scalar *){f, u.x, u.y, A22, KAPPA},
-      (double[]){fErr, VelErr, VelErr, AErr, KErr},
+  adapt_wavelet ((scalar *){f, u.x, u.y, A22, A11, A12, AThTh, KAPPA},
+      (double[]){fErr, VelErr, VelErr, AErr, AErr, AErr, AErr, KErr},
       MAXlevel, 4);
 }
 
@@ -123,7 +124,7 @@ event writingFiles (t = 0; t += tsnap; t <= tmax) {
 */
 event end (t = end) {
   if (pid() == 0)
-    fprintf(ferr, "Level %d, We %2.1e, Ohs %2.1e, Oha %2.1e, De %2.1e, Ec %2.1e\n", MAXlevel, We, Oh, Oha, De, Ec);
+    fprintf(ferr, "Level %d, We %2.1e, Re_s %2.1e, MuR %2.1e, Wi %2.1e, El %2.1e\n", MAXlevel, We, Re_s, muR, Wi, El);
 }
 
 /**
@@ -153,9 +154,9 @@ event logWriting (i++) {
     }
 
     if (i == 0) {
-      fprintf(ferr, "Level %d, We %2.1e, Ohs %2.1e, Oha %2.1e, De %2.1e, Ec %2.1e\n", MAXlevel, We, Oh, Oha, De, Ec);
+      fprintf(ferr, "Level %d, We %2.1e, Re_s %2.1e, MuR %2.1e, Wi %2.1e, El %2.1e\n", MAXlevel, We, Re_s, muR, Wi, El);
       fprintf(ferr, "i dt t ke xmax ymax\n");
-      fprintf(fp, "Level %d, We %2.1e, Ohs %2.1e, Oha %2.1e, De %2.1e, Ec %2.1e\n", MAXlevel, We, Oh, Oha, De, Ec);
+      fprintf(fp, "Level %d, We %2.1e, Re_s %2.1e, MuR %2.1e, Wi %2.1e, El %2.1e\n", MAXlevel, We, Re_s, muR, Wi, El);
       fprintf(fp, "i dt t ke xmax ymax\n");
     }
 
