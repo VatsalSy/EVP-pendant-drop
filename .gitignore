@@ -18,6 +18,9 @@
 
 # Custom executables (add your specific executable names here)
 **/die-swell_ViscoElastic
+**/getFacet
+**/getData-elastic-scalar
+**/die-swell_Newt
 
 # never exclude these files
 !*.c

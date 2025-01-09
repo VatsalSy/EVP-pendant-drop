@@ -86,9 +86,9 @@ def gettingfield(filename, zmin, zmax, rmax, nr):
     return R, Z, D2, vel, taup, nz
 # ----------------------------------------------------------------------------------------------------------------------
 
-def process_timestep(ti, folder, nGFS, GridsPerR, rmin, rmax, zmin, zmax, lw):
+def process_timestep(ti, caseToProcess, folder, nGFS, GridsPerR, rmin, rmax, zmin, zmax, lw):
     t = 0.01 * ti
-    place = f"intermediate/snapshot-{t:.4f}"
+    place = f"{caseToProcess}/intermediate/snapshot-{t:.4f}"
     name = f"{folder}/{int(t*1000):08d}.png"
 
     if not os.path.exists(place):
@@ -161,9 +161,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--CPUs', type=int, default=mp.cpu_count(), help='Number of CPUs to use')
     parser.add_argument('--nGFS', type=int, default=4000, help='Number of restart files to process')
+    parser.add_argument('--GridsPerR', type=int, default=64, help='Number of grids per R')
     parser.add_argument('--ZMAX', type=float, default=10.0, help='Maximum Z value')
     parser.add_argument('--RMAX', type=float, default=4.0, help='Maximum R value')
     parser.add_argument('--ZMIN', type=float, default=0.0, help='Minimum Z value')
+    parser.add_argument('--caseToProcess', type=str, default='../testCases/die-Swell_Viscoelastic', help='Case to process')  
+    parser.add_argument('--folderToSave', type=str, default='Video', help='Folder to save')
     args = parser.parse_args()
 
     num_processes = args.CPUs
@@ -173,11 +176,12 @@ def main():
     ZMIN = args.ZMIN
     
     rmin, rmax, zmin, zmax = [-RMAX, RMAX, ZMIN, ZMAX]
-    GridsPerR = 32
+    GridsPerR = args.GridsPerR
 
 
     lw = 2
-    folder = 'Video'
+    folder = args.folderToSave
+    caseToProcess = args.caseToProcess
 
     if not os.path.isdir(folder):
         os.makedirs(folder)
@@ -185,7 +189,7 @@ def main():
     # Create a pool of worker processes
     with mp.Pool(processes=num_processes) as pool:
         # Create partial function with fixed arguments
-        process_func = partial(process_timestep, 
+        process_func = partial(process_timestep, caseToProcess=caseToProcess,
                              folder=folder, nGFS=nGFS,
                              GridsPerR=GridsPerR, rmin=rmin, rmax=rmax, 
                              zmin=zmin, zmax=zmax, lw=lw)
