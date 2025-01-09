@@ -10,7 +10,7 @@
 scalar f[];
 vector u[];
 scalar A11[], A12[], A22[]; // conformation tensor
-scalar conform_qq[];
+scalar AThTh[];
 
 char filename[80];
 int nx, ny, len;
@@ -51,7 +51,7 @@ int main(int a, char const *arguments[])
 
     vel[] = sqrt(sq(u.x[])+sq(u.y[]));
 
-    trA[] = (A11[] + A22[] + conform_qq[])/3.0 - 1.0;
+    trA[] = ((A11[] + A22[] + AThTh[])/3.0);
 
     if (trA[] > 0.){
       trA[] = log(trA[])/log(10);
