@@ -65,7 +65,7 @@ int main(int argc, char const *argv[]) {
   Re_s = 1e0; //atof(argv[4]);
   muR = 1e-2;
 
-  tmax = 1e2; //atof(argv[5]);
+  tmax = 0.1; //atof(argv[5]);
 
   Wi = 1e0; //atof(argv[6]);
   El = 1e0; //atof(argv[7]);
@@ -130,12 +130,13 @@ event writingFiles (t = 0; t += tsnap; t <= tmax+tsnap) {
 /**
 ## Writing Log
 */
-event logWriting (t = 0; t += 0.1*tsnap; t <= tmax+tsnap) {
+event logWriting (i++) {
 
-  double ke = 0.;
-  foreach (reduction(+:ke)){ 
-    ke += (2*pi*y)*(0.5*rho(f[])*(sq(u.x[]) + sq(u.y[])))*sq(Delta);
+  scalar ke_field[];
+  foreach(){ 
+    ke_field[] = (2*pi*y)*(0.5*rho(f[])*(sq(u.x[]) + sq(u.y[])))*sq(Delta);
   }
+  double ke = statsf(ke_field).sum;
 
   scalar pos[];
   position (f, pos, {0,1,0});
@@ -144,31 +145,30 @@ event logWriting (t = 0; t += 0.1*tsnap; t <= tmax+tsnap) {
   position (f, posX, {1,0,0});
   double xmax = statsf(posX).max;
 
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (pid() == 0) {
-    static FILE * fp = NULL;
-    if (!fp) {
-      fp = fopen(logFile, t == 0 ? "w" : "a");
-      if (fp == NULL) {
-        fprintf(ferr, "Error opening log file\n");
-        return 1;
-      }
-      if (t == 0) {
-        fprintf(ferr, "Level %d, We %2.1e, Re_s %2.1e, MuR %2.1e, Wi %2.1e, El %2.1e\n", MAXlevel, We, Re_s, muR, Wi, El);
-        fprintf(ferr, "t dt ke xmax ymax\n");
-        fprintf(fp, "Level %d, We %2.1e, Re_s %2.1e, MuR %2.1e, Wi %2.1e, El %2.1e\n", MAXlevel, We, Re_s, muR, Wi, El);
-        fprintf(fp, "t dt ke xmax ymax\n");
-      }
+  static FILE * fp = NULL;
+  if (!fp) {
+    char name[80];
+    sprintf(name, logFile);
+    fp = fopen(name, t == 0 ? "w" : "a");
+    if (fp == NULL) {
+      fprintf(stderr, "Error opening log file\n");
+      return 1;
     }
-
-    fprintf(fp, "%g %g %g %g %g\n", t, dt, ke, xmax, ymax);
-    fprintf(ferr, "%g %g %g %g %g\n", t, dt, ke, xmax, ymax);
-    fflush(fp);
+    if (t == 0) {
+      fprintf(ferr, "Level %d, We %2.1e, Re_s %2.1e, MuR %2.1e, Wi %2.1e, El %2.1e\n", MAXlevel, We, Re_s, muR, Wi, El);
+      fprintf(ferr, "t dt ke xmax ymax\n");
+      fprintf(fp, "Level %d, We %2.1e, Re_s %2.1e, MuR %2.1e, Wi %2.1e, El %2.1e\n", MAXlevel, We, Re_s, muR, Wi, El);
+      fprintf(fp, "t dt ke xmax ymax\n");
+    }
   }
+
+  fprintf(fp, "%g %g %g %g %g\n", t, dt, ke, xmax, ymax);
+  fprintf(ferr, "%g %g %g %g %g\n", t, dt, ke, xmax, ymax);
+  fflush(fp);
 
   if(ke < -1e-10) return 1;
   if (xmax > 0.9*L0){ 
-    fprintf(ferr, "Liquid is close to the right boundary. Stopping simulation!\n");
+    fprintf(stderr, "Liquid is close to the right boundary. Stopping simulation!\n");      
     return 1;
   }
 }
@@ -177,7 +177,5 @@ event logWriting (t = 0; t += 0.1*tsnap; t <= tmax+tsnap) {
 ## Ending Simulation
 */
 event end (t = end) {
-  if (pid() == 0){
-    fprintf(ferr, "Level %d, We %2.1e, Re_s %2.1e, MuR %2.1e, Wi %2.1e, El %2.1e\n", MAXlevel, We, Re_s, muR, Wi, El);
-  }
+  fprintf(stderr, "Level %d, We %2.1e, Re_s %2.1e, MuR %2.1e, Wi %2.1e, El %2.1e\n", MAXlevel, We, Re_s, muR, Wi, El);
 }

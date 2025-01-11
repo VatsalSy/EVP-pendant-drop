@@ -10,7 +10,7 @@ file=$1
 NP=${2:-4}  # use 4 as default if not provided
 
 mkdir -p $file
-CC99='mpicc -std=c99' qcc -Wall -O2 -I$PWD/src-local -I$PWD/../src-local -disable-dimensions $file.c -o $file/$file -lm
+CC99='mpicc -std=c99' qcc -Wall -O2 -D_MPI=1 -I$PWD/src-local -I$PWD/../src-local -disable-dimensions $file.c -o $file/$file -lm
 chmod +x $file/$file  # Ensure executable has proper permissions
 cd $file
 mpirun -np $NP ./$file
