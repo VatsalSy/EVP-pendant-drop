@@ -130,7 +130,7 @@ event writingFiles (t = 0; t += tsnap; t <= tmax) {
 */
 event end (t = end) {
   if (pid() == 0)
-    fprintf(ferr, "Level %d, We %2.1e, Re_s %2.1e, MuR %2.1e, Wi %2.1e, El %2.1e\n", MAXlevel, We, Re_s, muR, Wi, El);
+    fprintf(ferr, "Level %d, We %2.1e, Re_s %2.1e, MuR %2.1e, Wi %2.1e, El 0.0\n", MAXlevel, We, Re_s, muR, Wi);
 }
 
 /**
@@ -160,9 +160,9 @@ event logWriting (i++) {
     }
 
     if (i == 0) {
-      fprintf(ferr, "Level %d, We %2.1e, Re_s %2.1e, MuR %2.1e, Wi %2.1e, El %2.1e\n", MAXlevel, We, Re_s, muR, Wi, El);
+      fprintf(ferr, "Level %d, We %2.1e, Re_s %2.1e, MuR %2.1e, Wi %2.1e, El 0.0\n", MAXlevel, We, Re_s, muR, Wi);
       fprintf(ferr, "i dt t ke xmax ymax\n");
-      fprintf(fp, "Level %d, We %2.1e, Re_s %2.1e, MuR %2.1e, Wi %2.1e, El %2.1e\n", MAXlevel, We, Re_s, muR, Wi, El);
+      fprintf(fp, "Level %d, We %2.1e, Re_s %2.1e, MuR %2.1e, Wi %2.1e, El 0.0\n", MAXlevel, We, Re_s, muR, Wi);
       fprintf(fp, "i dt t ke xmax ymax\n");
     }
 
