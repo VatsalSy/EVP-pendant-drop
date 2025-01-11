@@ -70,6 +70,8 @@ int main(int argc, char const *argv[]) {
   Wi = 1e0; //atof(argv[6]);
   El = 1e0; //atof(argv[7]);
 
+  TOLelastic = (1.0-1e-3);
+
   A12[left] = dirichlet(clamp(f[],0.,1.)*El*(-2e0*y)/Wi);
   A11[left] = dirichlet(clamp(f[],0.,1.)*(1 + 2*El*sq(-2e0*y)) + (1.0-clamp(f[],0.,1.)));
 
