@@ -13,4 +13,4 @@ mkdir -p $file
 CC99='mpicc -std=c99' qcc -Wall -O2 -D_MPI=1 -I$PWD/src-local -I$PWD/../src-local -disable-dimensions $file.c -o $file/$file -lm
 chmod +x $file/$file  # Ensure executable has proper permissions
 cd $file
-mpirun -np $NP ./$file
+mpirun --allow-run-as-root -np $NP ./$file
