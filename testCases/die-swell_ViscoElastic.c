@@ -59,7 +59,7 @@ int main(int argc, char const *argv[]) {
 
   // Values taken from the terminal
   L0 = 1e1; //atof(argv[1]);
-  MAXlevel = 9; //atoi(argv[2]);
+  MAXlevel = 11; //atoi(argv[2]);
 
   We = 1e2; //atof(argv[3]);
   Re_s = 1e0; //atof(argv[4]);
@@ -121,7 +121,7 @@ event adapt(i++){
 /**
 ## Dumping snapshots
 */
-event writingFiles (t = 0; t += tsnap; t <= tmax) {
+event writingFiles (t = 0; t += tsnap; t <= tmax+tsnap) {
   dump (file = dumpFile);
   sprintf (nameOut, "intermediate/snapshot-%5.4f", t);
   dump(file=nameOut);
@@ -131,14 +131,15 @@ event writingFiles (t = 0; t += tsnap; t <= tmax) {
 ## Ending Simulation
 */
 event end (t = end) {
-  if (pid() == 0)
+  if (pid() == 0){
     fprintf(ferr, "Level %d, We %2.1e, Re_s %2.1e, MuR %2.1e, Wi %2.1e, El %2.1e\n", MAXlevel, We, Re_s, muR, Wi, El);
+  }
 }
 
 /**
 ## Log writing
 */
-event logWriting (i++) {
+event logWriting (t = 0; t += 0.1*tsnap; t <= tmax+tsnap) {
 
   double ke = 0.;
   foreach (reduction(+:ke)){
