@@ -4,6 +4,8 @@
 
 ### Running Test Cases
 
+*Note:* conda and mpicc can cause some issues. Deactivate conda environment before running the test cases.
+
 To compile and run test cases, use the `runCodesInParallel.sh` script in the `testCases` directory. The script takes a filename (without the .c extension) as a required argument and an optional number of processes for MPI:
 
 ```bash
