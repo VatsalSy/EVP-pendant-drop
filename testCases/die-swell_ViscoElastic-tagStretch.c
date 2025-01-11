@@ -2,8 +2,8 @@
  * @file die-swell_ViscoElastic.c
  * @brief This file contains the simulation code for the die-swell of a viscoelastic liquid being extruded out of a die. 
  * @author Vatsal Sanjay
- * @version 2.0
- * These are viscoelastic simulations!
+ * @version 1.0
+ * These are Newtonian simulations! -- here, the elastic modulus is 0. Wi is 1e30 (infinite).
  * @date Oct 22, 2024
 */
 
@@ -36,10 +36,9 @@ int MAXlevel;
 // Re_s -> Solvent Reynolds number
 // Re_a -> air Reynolds number
 // Wi -> Weissberger number
-// El -> elasticity number (this is \tilde{G}*sq(Wi)), El = G\lambda^2/(\rho R^2).
 // muR -> ratio of air viscosity to solvent viscosity
 
-double We, Re_s, Re_a, muR, Wi, El, tmax;
+double We, Re_s, Re_a, muR, Wi, tmax;
 char nameOut[80], dumpFile[80];
 
 // boundary conditions
@@ -67,11 +66,10 @@ int main(int argc, char const *argv[]) {
 
   tmax = 1e2; //atof(argv[5]);
 
-  Wi = 1e0; //atof(argv[6]);
-  El = 1e0; //atof(argv[7]);
+  Wi = 1e30; //atof(argv[6]);
 
-  A12[left] = dirichlet(clamp(f[],0.,1.)*El*(-2e0*y)/Wi);
-  A11[left] = dirichlet(clamp(f[],0.,1.)*(1 + 2*El*sq(-2e0*y)) + (1.0-clamp(f[],0.,1.)));
+  A12[left] = dirichlet(clamp(f[],0.,1.)*(-2e0*y));
+  A11[left] = dirichlet(clamp(f[],0.,1.)*(1 + 2*sq(-2e0*y)) + (1.0-clamp(f[],0.,1.)));
 
   init_grid (1 << 6);
 
@@ -86,7 +84,7 @@ int main(int argc, char const *argv[]) {
   rho1 = 1., rho2 = 1e-3;
   mu1 = 1e0/Re_s, mu2 = muR/Re_s;
   lambda1 = Wi, lambda2 = 0.;
-  G1 = El/sq(Wi), G2 = 0.;
+  G1 = 0., G2 = 0.;
   f.sigma = 1.0/We;
 
   run();
@@ -100,8 +98,8 @@ event init (t = 0) {
     fraction (f, intersection(1-R2(x,y,z), epsilon-x));
     foreach(){
       u.x[] = clamp(f[],0.,1.)*2e0*(1-R2(x,y,z));
-      A12[] = clamp(f[],0.,1.)*El*(-2e0*y)/Wi;
-      A11[] = clamp(f[],0.,1.)*(1 + 2*El*sq(-2e0*y))+(1-clamp(f[],0.,1.));
+      A12[] = clamp(f[],0.,1.)*(-2e0*y);
+      A11[] = clamp(f[],0.,1.)*(1 + 2*sq(-2e0*y)) + (1.0-clamp(f[],0.,1.));
       u.y[] = 0.0;
     }
   }
