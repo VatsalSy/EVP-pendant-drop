@@ -27,7 +27,7 @@
 #define VelErr (1e-2)                               // error tolerances in velocity -- Use 1e-2 for low Oh and 1e-3 to 5e-3 for high Oh/moderate to high J
 #define AErr (1e-3)                                 // error tolerance in VoF curvature calculated using heigh function method (see adapt event)
 
-#define epsilon (2e-1)
+#define epsilon (1e-1)
 #define R2(x,y,z) (sq(y) + sq(z))
 
 
@@ -54,15 +54,12 @@ u.n[left] = dirichlet(clamp(f[],0.,1.)*2e0*(1-R2(x,y,z)));
 u.t[left] = dirichlet(0.0);
 p[left] = dirichlet(0.0);
 
-A12[left] = dirichlet(clamp(f[],0.,1.)*(-2e0*y));
-A11[left] = dirichlet(clamp(f[],0.,1.)*(1 + 2*sq(-2e0*y)) + (1.0-clamp(f[],0.,1.)));
-
 int main(int argc, char const *argv[]) {
 
 
   // Values taken from the terminal
   L0 = 1e1; //atof(argv[1]);
-  MAXlevel = 12; //atoi(argv[2]);
+  MAXlevel = 11; //atoi(argv[2]);
 
   We = 1e2; //atof(argv[3]);
   Re_s = 1e0; //atof(argv[4]);
@@ -74,6 +71,9 @@ int main(int argc, char const *argv[]) {
   El = 1e0; //atof(argv[7]);
 
   TOLelastic = (1.0-1e-3);
+
+  A12[left] = dirichlet(clamp(f[],0.,1.)*El*(-2e0*y)/Wi);
+  A11[left] = dirichlet(clamp(f[],0.,1.)*(1 + 2*El*sq(-2e0*y)) + (1.0-clamp(f[],0.,1.)));
 
   init_grid (1 << 6);
 
@@ -102,8 +102,8 @@ event init (t = 0) {
     fraction (f, intersection(1-R2(x,y,z), epsilon-x));
     foreach(){
       u.x[] = clamp(f[],0.,1.)*2e0*(1-R2(x,y,z));
-      A12[] = clamp(f[],0.,1.)*(-2e0*y);
-      A11[] = clamp(f[],0.,1.)*(1 + 2*sq(-2e0*y))+(1-clamp(f[],0.,1.));
+      A12[] = clamp(f[],0.,1.)*El*(-2e0*y)/Wi;
+      A11[] = clamp(f[],0.,1.)*(1 + 2*El*sq(-2e0*y))+(1-clamp(f[],0.,1.));
       u.y[] = 0.0;
     }
   }
