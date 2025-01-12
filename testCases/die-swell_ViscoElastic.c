@@ -65,7 +65,7 @@ int main(int argc, char const *argv[]) {
   Re_s = 1e0; //atof(argv[4]);
   muR = 1e-2;
 
-  tmax = 0.1; //atof(argv[5]);
+  tmax = 1e2; //atof(argv[5]);
 
   Wi = 1e0; //atof(argv[6]);
   El = 1e0; //atof(argv[7]);
