@@ -126,7 +126,7 @@ def process_timestep(ti, caseToProcess, folder, nGFS, GridsPerR, rmin, rmax, zmi
     line_segments = LineCollection(segs1, linewidths=4, colors='blue', linestyle='solid')
     ax.add_collection(line_segments)
 
-    cntrl1 = ax.imshow(taup, cmap="coolwarm", interpolation='Bilinear', origin='lower', extent=[-rminp, -rmaxp, zminp, zmaxp], vmax=0.1, vmin=-0.1)
+    cntrl1 = ax.imshow(taup, cmap="coolwarm", interpolation='Bilinear', origin='lower', extent=[-rminp, -rmaxp, zminp, zmaxp], vmax=1.0, vmin=-1.0)
 
     cntrl2 = ax.imshow(vel, interpolation='Bilinear', cmap='Blues', origin='lower', extent=[rminp, rmaxp, zminp, zmaxp], vmax=2.0, vmin=0.0)
 
@@ -139,7 +139,7 @@ def process_timestep(ti, caseToProcess, folder, nGFS, GridsPerR, rmin, rmax, zmi
     # Left colorbar
     cb1 = fig.add_axes([l-0.04, b, 0.03, h])
     c1 = plt.colorbar(cntrl1, cax=cb1, orientation='vertical')
-    c1.set_label(r'$\log_{10}\text{tr}\left(\mathcal{A}\right)$', fontsize=TickLabel, labelpad=5)
+    c1.set_label(r'$\text{tr}\left(\mathcal{A}\right)$', fontsize=TickLabel, labelpad=5)
     c1.ax.tick_params(labelsize=TickLabel)
     c1.ax.yaxis.set_ticks_position('left')
     c1.ax.yaxis.set_label_position('left')

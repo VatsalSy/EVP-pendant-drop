@@ -51,13 +51,13 @@ int main(int a, char const *arguments[])
 
     vel[] = sqrt(sq(u.x[])+sq(u.y[]));
 
-    trA[] = ((A11[] + A22[] + AThTh[])/3.0);
+    trA[] = f[]*((A11[] + A22[] + AThTh[])/3.0-1.0);
 
-    if (trA[] > 0.){
-      trA[] = log(trA[])/log(10);
-    } else {
-      trA[] = -10;
-    }
+    // if (trA[] > 0.){
+    //   trA[] = log(trA[])/log(10);
+    // } else {
+    //   trA[] = -10;
+    // }
 
   }
 
