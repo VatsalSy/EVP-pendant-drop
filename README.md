@@ -1,5 +1,7 @@
 # EVP-pendant-drop
 
+This repository has moved to [comphy-lab/Pendant-Drop-EVP](https://github.com/comphy-lab/Pendant-Drop-EVP).
+
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![OpenMP](https://img.shields.io/badge/OpenMP-enabled-brightgreen.svg)](https://www.openmp.org/)
 [![MPI](https://img.shields.io/badge/MPI-enabled-brightgreen.svg)](https://www.open-mpi.org/)
