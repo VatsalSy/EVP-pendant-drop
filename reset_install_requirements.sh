@@ -1,57 +1,45 @@
-#!/bin/zsh
-# tested on MacOS only. Let us know if you find issues running with Linux by opening an issue. 
-# modify using http://basilisk.fr/src/INSTALL 
-# ensures that we are always using the latest version of basilisk
+#!/usr/bin/env bash
+# Build the checked-in Basilisk tree without replacing its local safety policy.
+set -euo pipefail
 
-# Check if --hard flag is passed
-HARD_RESET=false
-if [[ "$1" == "--hard" ]]; then
-    HARD_RESET=true
+if [[ $# -ne 0 ]]; then
+    printf '%s\n' 'Usage: bash reset_install_requirements.sh (no destructive reset)' >&2
+    exit 2
 fi
-
-# Function to install basilisk
-install_basilisk() {
-    darcs clone http://basilisk.fr/basilisk
-    cd basilisk/src
-
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        echo "Using MacOS"
-        ln -s config.osx config
-    else
-        echo "Using Linux"
-        ln -s config.gcc config
-    fi
-    make
-}
-
-# Remove project config always
-rm -rf .project_config
-
-# Check if basilisk needs to be installed
-if [[ "$HARD_RESET" == true ]] || [[ ! -d "basilisk" ]]; then
-    echo "Installing basilisk..."
-    rm -rf basilisk
-    install_basilisk
-else
-    echo "Using existing basilisk installation..."
-    cd basilisk/src
-fi
-
-# Setup environment variables
-echo "export BASILISK=$PWD" >> ../../.project_config
-echo "export PATH=\$PATH:\$BASILISK" >> ../../.project_config
-
-source ../../.project_config
-
-# Check if qcc is working properly
-echo "\nChecking qcc installation..."
-if ! qcc --version > /dev/null 2>&1; then
-    echo "\033[0;31mError: qcc is not working properly.\033[0m"
-    echo "Please ensure you have Xcode Command Line Tools installed."
-    echo "You can install them by running: xcode-select --install"
-    echo "For more details, visit: http://basilisk.fr/src/INSTALL"
+PROJECT_ROOT="$(cd -- "$(dirname -- "$0")" && pwd -P)"
+BASILISK="$PROJECT_ROOT/basilisk/src"
+if [[ ! -f "$BASILISK/Makefile" ]] ||
+   ! grep -Fq 'Basilisk network display is disabled in this repository' "$BASILISK/display.h"; then
+    printf '%s\n' 'The hardened vendored Basilisk tree is missing. Restore it from a trusted checkout.' >&2
     exit 1
-else
-    echo "\033[0;32mqcc is properly installed.\033[0m"
-    qcc --version
 fi
+
+(
+    cd -- "$BASILISK"
+    case "$(uname -s)" in
+        Darwin) platform_config=config.osx ;;
+        *) platform_config=config.gcc ;;
+    esac
+    # The checkout carries the config link and binaries of the machine that
+    # committed them. Keep a custom config; point a stock one at this platform.
+    current_config="$(readlink config 2>/dev/null || true)"
+    if [[ ! -e config && ! -L config ]] ||
+       [[ "$current_config" == config.osx || "$current_config" == config.gcc ]]; then
+        ln -sfn "$platform_config" config
+    fi
+    # Binaries built for another platform cannot run here: rebuild from source.
+    if ! ./qcc --version >/dev/null 2>&1; then
+        make clean
+        rm -f ast/grammar  # not removed by "make clean"; make rebuilds it
+    fi
+    # Use the default goal. "make all" is forwarded to ast/interpreter, which
+    # has no such target, and stops the build.
+    make
+    ./qcc --version >/dev/null
+)
+{
+    printf 'export PROJECT_ROOT=%q\n' "$PROJECT_ROOT"
+    printf 'export BASILISK=%q\n' "$BASILISK"
+    printf 'export PATH="$BASILISK:$PATH"\n'
+} > "$PROJECT_ROOT/.project_config"
+printf '%s\n' 'Built the vendored Basilisk toolchain without network display targets.'

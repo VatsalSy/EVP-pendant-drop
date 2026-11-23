@@ -71,7 +71,11 @@ A high-performance computational framework for studying viscoelastic pendant dro
    cd EVP-pendant-drop
    ```
 
-2. Ensure Basilisk is properly installed and configured in your system
+2. Build the Basilisk tree shipped in `basilisk/` (no network access, no viewer):
+   ```bash
+   bash reset_install_requirements.sh
+   source .project_config
+   ```
 3. Add the src-local directory to your Basilisk include path
 
 ## Usage
